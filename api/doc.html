@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>API Documentation - ARISCTUNNEL V4</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0d1117; color: #e6edf3; font-family: 'Segoe UI', monospace; }
+  .top-bar { background: linear-gradient(135deg, #161b22, #1f2937); border-bottom: 1px solid #21262d; padding: 16px 24px; display: flex; align-items: center; gap: 12px; }
+  .top-bar h1 { font-size: 20px; color: #58a6ff; font-weight: 700; }
+  .top-bar span { font-size: 12px; background: #238636; color: #fff; padding: 2px 8px; border-radius: 20px; }
+  .auth-box { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 16px 24px; margin: 20px 24px; display: flex; align-items: center; gap: 12px; }
+  .auth-box label { color: #8b949e; font-size: 13px; white-space: nowrap; }
+  .auth-box .key-val { background: #0d1117; color: #f0883e; font-family: monospace; padding: 6px 14px; border-radius: 6px; border: 1px solid #30363d; font-size: 14px; flex: 1; }
+  .auth-box .note { color: #8b949e; font-size: 12px; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 10px 24px 40px; }
+  .section-title { font-size: 22px; color: #f0883e; margin: 30px 0 14px; border-left: 4px solid #f0883e; padding-left: 12px; }
+  .endpoint-card { background: #161b22; border: 1px solid #30363d; border-radius: 10px; margin-bottom: 18px; overflow: hidden; }
+  .endpoint-header { background: #1f2937; padding: 14px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .method { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 5px; text-transform: uppercase; }
+  .get { background: #0d419d; color: #79c0ff; }
+  .endpoint-url { font-family: monospace; color: #58a6ff; font-size: 14px; word-break: break-all; }
+  .endpoint-desc { color: #8b949e; font-size: 13px; margin-left: auto; }
+  .endpoint-body { padding: 20px; border-top: 1px solid #30363d; }
+  .params-title { font-size: 13px; color: #8b949e; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+  .params-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .params-table th { background: #0d1117; color: #8b949e; padding: 8px 12px; text-align: left; border-bottom: 1px solid #30363d; }
+  .params-table td { padding: 8px 12px; border-bottom: 1px solid #21262d; vertical-align: top; }
+  .param-name { color: #79c0ff; font-family: monospace; }
+  .param-req { color: #f85149; font-size: 11px; font-weight: 600; }
+  .param-opt { color: #3fb950; font-size: 11px; }
+  .example-title { font-size: 13px; color: #8b949e; margin: 16px 0 8px; text-transform: uppercase; letter-spacing: 1px; }
+  .code-block { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; padding: 14px 16px; font-family: monospace; font-size: 12px; color: #e6edf3; overflow-x: auto; position: relative; line-height: 1.7; }
+  .code-block .url { color: #58a6ff; }
+  .code-block .json-key { color: #79c0ff; }
+  .code-block .json-str { color: #a5d6ff; }
+  .code-block .json-num { color: #f0883e; }
+  .copy-btn { position: absolute; top: 8px; right: 8px; background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 4px 10px; border-radius: 5px; font-size: 11px; cursor: pointer; }
+  .copy-btn:hover { color: #e6edf3; background: #30363d; }
+  .response-badge { display: inline-block; background: #1a4a1a; color: #3fb950; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-bottom: 10px; }
+  .install-box { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 20px; margin-bottom: 20px; }
+  .install-box .cmd { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 12px 16px; font-family: monospace; color: #3fb950; font-size: 13px; margin: 8px 0; position: relative; overflow-x: auto; }
+  .badge-green { background: #1a4a1a; color: #3fb950; font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+  .badge-orange { background: #3d2600; color: #f0883e; font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+  footer { text-align: center; color: #30363d; font-size: 12px; margin-top: 40px; padding: 20px; border-top: 1px solid #21262d; }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <h1>⚡ ARISCTUNNEL V4 — API Docs</h1>
+  <span>v4.0 LTS</span>
+</div>
+
+<!-- AUTH KEY INFO -->
+<div class="auth-box">
+  <label>🔑 AUTH KEY:</label>
+  <div class="key-val" id="authKeyDisplay">
+    <?php
+      $key = file_exists('/etc/xray/api_auth.key') ? trim(file_get_contents('/etc/xray/api_auth.key')) : 'YOUR_AUTH_KEY';
+      echo htmlspecialchars($key);
+    ?>
+  </div>
+  <div class="note">Tambahkan <code style="background:#0d1117;padding:2px 6px;border-radius:4px;color:#f0883e">?auth=KEY</code> di setiap request</div>
+</div>
+
+<div class="container">
+
+<!-- INSTALL COMMAND -->
+<div class="section-title">🚀 Install / Update API</div>
+<div class="install-box">
+  <p style="color:#8b949e;font-size:13px;margin-bottom:10px;">Jalankan command berikut untuk install/update support API (tanpa perlu install ulang script utama):</p>
+  <div class="cmd">wget -O /usr/bin/api-install https://raw.githubusercontent.com/AutoNV/gh/main/api-install.sh && chmod +x /usr/bin/api-install && bash /usr/bin/api-install</div>
+  <p style="color:#8b949e;font-size:12px;margin-top:8px;">Atau update saja file API:</p>
+  <div class="cmd">bash /usr/bin/update-api</div>
+</div>
+
+<!-- SSH SECTION -->
+<div class="section-title">🔐 SSH / OpenVPN</div>
+
+<!-- Trial SSH -->
+<div class="endpoint-card">
+  <div class="endpoint-header">
+    <span class="method get">GET</span>
+    <span class="endpoint-url">/api/trial-ssh</span>
+    <span class="endpoint-desc">Buat akun trial SSH 60 menit</span>
+  </div>
+  <div class="endpoint-body">
+    <p class="params-title">Parameters</p>
+    <table class="params-table">
+      <tr><th>Parameter</th><th>Tipe</th><th>Status</th><th>Keterangan</th></tr>
+      <tr><td class="param-name">auth</td><td>string</td><td><span class="param-req">WAJIB</span></td><td>Auth key server</td></tr>
+    </table>
+    <p class="example-title">Contoh Request</p>
+    <div class="code-block" style="position:relative">
+      <button class="copy-btn" onclick="copyText(this)">Copy</button>
+      <span class="url"><?php echo 'https://' . (trim(shell_exec('cat /etc/xray/domain 2>/dev/null')) ?: 'domain.com'); ?>/api/trial-ssh?auth=<?php echo htmlspecialchars($key); ?></span>
+    </div>
+    <p class="example-title">Contoh Response</p>
+    <span class="response-badge">200 OK</span>
+    <div class="code-block">
+{
+  <span class="json-key">"status"</span>: <span class="json-str">"success"</span>,
+  <span class="json-key">"data"</span>: {
+    <span class="json-key">"username"</span>: <span class="json-str">"TrialAB123"</span>,
+    <span class="json-key">"password"</span>: <span class="json-str">"1"</span>,
+    <span class="json-key">"host"</span>: <span class="json-str">"domain.com"</span>,
+    <span class="json-key">"ip"</span>: <span class="json-str">"1.2.3.4"</span>,
+    <span class="json-key">"ports"</span>: { <span class="json-key">"openSSH"</span>: <span class="json-str">"22"</span>, <span class="json-key">"sshWS"</span>: <span class="json-str">"80, 8080"</span>, ... },
+    <span class="json-key">"formats"</span>: { <span class="json-key">"port80"</span>: <span class="json-str">"domain.com:80@user:pass"</span>, ... },
+    <span class="json-key">"saveLink"</span>: <span class="json-str">"https://domain.com:81/ssh-TrialAB123.txt"</span>,
+    <span class="json-key">"expired"</span>: <span class="json-str">"60 Minutes"</span>,
+    <span class="json-key">"isp"</span>: <span class="json-str">"Rumahweb Indonesia"</span>,
+    <span class="json-key">"city"</span>: <span class="json-str">"Jakarta"</span>
+  }
+}
+    </div>
+  </div>
+</div>
+
+<!-- Create SSH -->
+<div class="endpoint-card">
+  <div class="endpoint-header">
+    <span class="method get">GET</span>
+    <span class="endpoint-url">/api/create-ssh</span>
+    <span class="endpoint-desc">Buat akun SSH baru</span>
+  </div>
+  <div class="endpoint-body">
+    <table class="params-table">
+      <tr><th>Parameter</th><th>Tipe</th><th>Status</th><th>Keterangan</th></tr>
+      <tr><td class="param-name">auth</td><td>string</td><td><span class="param-req">WAJIB</span></td><td>Auth key server</td></tr>
+      <tr><td class="param-name">user</td><td>string</td><td><span class="param-req">WAJIB</span></td><td>Username SSH</td></tr>
+      <tr><td class="param-name">password</td><td>string</td><td><span class="param-req">WAJIB</span></td><td>Password SSH</td></tr>
+      <tr><td class="param-name">exp</td><td>integer</td><td><span class="param-req">WAJIB</span></td><td>Expired (hari)</td></tr>
+      <tr><td class="param-name">limitip</td><td>integer</td><td><span class="param-opt">OPSIONAL</span></td><td>Limit IP (default: 1)</td></tr>
+    </table>
+    <p class="example-title">Contoh Request</p>
+    <div class="code-block" style="position:relative">
+      <button class="copy-btn" onclick="copyText(this)">Copy</button>
+      <span class="url"><?php echo 'https://' . (trim(shell_exec('cat /etc/xray/domain 2>/dev/null')) ?: 'domain.com'); ?>/api/create-ssh?auth=<?php echo htmlspecialchars($key); ?>&user=nexus&password=pass123&exp=30&limitip=2</span>
+    </div>
+  </div>
+</div>
+
+<!-- VMESS -->
+<div class="section-title">💠 VMess (Xray)</div>
+
+<div class="endpoint-card">
+  <div class="endpoint-header">
+    <span class="method get">GET</span>
+    <span class="endpoint-url">/api/trial-vmess</span>
+    <span class="endpoint-desc">Buat akun trial VMess 60 menit</span>
+  </div>
+  <div class="endpoint-body">
+    <table class="params-table">
+      <tr><th>Parameter</th><th>Tipe</th><th>Status</th><th>Keterangan</th></tr>
+      <tr><td class="param-name">auth</td><td>string</td><td><span class="param-req">WAJIB</span></td><td>Auth key server</td></tr>
+    </table>
+    <p class="example-title">Contoh Response</p>
+    <span class="response-badge">200 OK</span>
+    <div class="code-block">
+{
+  <span class="json-key">"status"</span>: <span class="json-str">"success"</span>,
+  <span class="json-key">"data"</span>: {
+    <span class="json-key">"user"</span>: <span class="json-str">"Trial6150"</span>,
+    <span class="json-key">"uuid"</span>: <span class="json-str">"9207a7a0-5d21-4d0f-8e62-a3c23bcb72ba"</span>,
+    <span class="json-key">"expired"</span>: <span class="json-str">"60 minutes"</span>,
+    <span class="json-key">"domain"</span>: <span class="json-str">"domain.com"</span>,
+    <span class="json-key">"ws_tls"</span>: <span class="json-str">"vmess://eyJ2IjoiMiIsIn..."</span>,
+    <span class="json-key">"ws_none_tls"</span>: <span class="json-str">"vmess://eyJ2IjoiMiIsIn..."</span>,
+    <span class="json-key">"grpc"</span>: <span class="json-str">"vmess://eyJ2IjoiMiIsIn..."</span>,
+    <span class="json-key">"openclash"</span>: <span class="json-str">"https://domain.com:81/vmess-Trial6150-uuid.txt"</span>,
+    <span class="json-key">"dashboard_url"</span>: <span class="json-str">"https://domain.com/api/vmess-Trial6150-uuid.html"</span>
+  }
+}
+    </div>
+  </div>
+</div>
+
+<div class="endpoint-card">
+  <div class="endpoint-header">
+    <span class="method get">GET</span>
+    <span class="endpoint-url">/api/create-vmess</span>
+    <span class="endpoint-desc">Buat akun VMess baru</span>
+  </div>
+  <div class="endpoint-body">
+    <table class="params-table">
+      <tr><th>Parameter</th><th>Tipe</th><th>Status</th><th>Keterangan</th></tr>
+      <tr><td class="param-name">auth</td><td>string</td><td><span class="param-req">WAJIB</span></td><td>Auth key server</td></tr>
+      <tr><td class="param-name">user</td><td>string</td><td><span class="param-req">WAJIB</span></td><td>Username</td></tr>
+      <tr><td class="param-name">quota</td><td>integer</td><td><span class="param-opt">OPSIONAL</span></td><td>Quota GB (0=unlimited)</td></tr>
+      <tr><td class="param-name">limitip</td><td>integer</td><td><span class="param-opt">OPSIONAL</span></td><td>Limit IP</td></tr>
+      <tr><td class="param-name">exp</td><td>integer</td><td><span class="param-req">WAJIB</span></td><td>Expired (hari)</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- VLESS -->
+<div class="section-title">🔵 VLess (Xray)</div>
+
+<div class="endpoint-card">
+  <div class="endpoint-header">
+    <span class="method get">GET</span>
+    <span class="endpoint-url">/api/trial-vless</span>
+    <span class="endpoint-desc">Buat akun trial VLess 60 menit</span>
+  </div>
+  <div class="endpoint-body">
+    <table class="params-table">
+      <tr><th>Parameter</th><th>Tipe</th><th>Status</th><th>Keterangan</th></tr>
+      <tr><td class="param-name">auth</td><td>string</td><td><span class="param-req">WAJIB</span></td><td>Auth key server</td></tr>
+    </table>
+    <p class="example-title">Contoh Response</p>
+    <span class="response-badge">200 OK</span>
+    <div class="code-block">
+{
+  <span class="json-key">"status"</span>: <span class="json-str">"success"</span>,
+  <span class="json-key">"data"</span>: {
+    <span class="json-key">"user"</span>: <span class="json-str">"Trial6813"</span>,
+    <span class="json-key">"uuid"</span>: <span class="json-str">"2a29fc9b-2f27-417a-88e4-323b9b1e9ede"</span>,
+    <span class="json-key">"expired"</span>: <span class="json-str">"60 minutes"</span>,
+    <span class="json-key">"ws_tls"</span>: <span class="json-str">"vless://2a29fc9b...@domain.com:443?..."</span>,
+    <span class="json-key">"ws_none_tls"</span>: <span class="json-str">"vless://2a29fc9b...@domain.com:80?..."</span>,
+    <span class="json-key">"grpc"</span>: <span class="json-str">"vless://2a29fc9b...@domain.com:443?mode=gun..."</span>,
+    <span class="json-key">"openclash"</span>: <span class="json-str">"https://domain.com:81/vless-Trial6813-uuid.txt"</span>
+  }
+}
+    </div>
+  </div>
+</div>
+
+<div class="endpoint-card">
+  <div class="endpoint-header">
+    <span class="method get">GET</span>
+    <span class="endpoint-url">/api/create-vless</span>
+    <span class="endpoint-desc">Buat akun VLess baru</span>
+  </div>
+  <div class="endpoint-body">
+    <table class="params-table">
+      <tr><th>Parameter</th><th>Tipe</th><th>Status</th><th>Keterangan</th></tr>
+      <tr><td class="param-name">auth</td><td>string</td><td><span class="param-req">WAJIB</span></td><td>Auth key server</td></tr>
+      <tr><td class="param-name">user</td><td>string</td><td><span class="param-req">WAJIB</span></td><td>Username</td></tr>
+      <tr><td class="param-name">quota</td><td>integer</td><td><span class="param-opt">OPSIONAL</span></td><td>Quota GB (0=unlimited)</td></tr>
+      <tr><td class="param-name">limitip</td><td>integer</td><td><span class="param-opt">OPSIONAL</span></td><td>Limit IP</td></tr>
+      <tr><td class="param-name">exp</td><td>integer</td><td><span class="param-req">WAJIB</span></td><td>Expired (hari)</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- TROJAN -->
+<div class="section-title">🟠 Trojan (Xray)</div>
+
+<div class="endpoint-card">
+  <div class="endpoint-header">
+    <span class="method get">GET</span>
+    <span class="endpoint-url">/api/trial-trojan</span>
+    <span class="endpoint-desc">Buat akun trial Trojan 60 menit</span>
+  </div>
+  <div class="endpoint-body">
+    <table class="params-table">
+      <tr><th>Parameter</th><th>Tipe</th><th>Status</th><th>Keterangan</th></tr>
+      <tr><td class="param-name">auth</td><td>string</td><td><span class="param-req">WAJIB</span></td><td>Auth key server</td></tr>
+    </table>
+    <p class="example-title">Contoh Response</p>
+    <span class="response-badge">200 OK</span>
+    <div class="code-block">
+{
+  <span class="json-key">"status"</span>: <span class="json-str">"success"</span>,
+  <span class="json-key">"data"</span>: {
+    <span class="json-key">"user"</span>: <span class="json-str">"Trial7804"</span>,
+    <span class="json-key">"uuid"</span>: <span class="json-str">"71e0605c-0351-4d8c-a31a-62bc33ae6bba"</span>,
+    <span class="json-key">"expired"</span>: <span class="json-str">"60 minutes"</span>,
+    <span class="json-key">"ws"</span>: <span class="json-str">"trojan://71e0605c...@domain.com:443?path=..."</span>,
+    <span class="json-key">"grpc"</span>: <span class="json-str">"trojan://71e0605c...@domain.com:443?mode=gun..."</span>,
+    <span class="json-key">"openclash"</span>: <span class="json-str">"https://domain.com:81/trojan-Trial7804-uuid.txt"</span>
+  }
+}
+    </div>
+  </div>
+</div>
+
+<div class="endpoint-card">
+  <div class="endpoint-header">
+    <span class="method get">GET</span>
+    <span class="endpoint-url">/api/create-trojan</span>
+    <span class="endpoint-desc">Buat akun Trojan baru</span>
+  </div>
+  <div class="endpoint-body">
+    <table class="params-table">
+      <tr><th>Parameter</th><th>Tipe</th><th>Status</th><th>Keterangan</th></tr>
+      <tr><td class="param-name">auth</td><td>string</td><td><span class="param-req">WAJIB</span></td><td>Auth key server</td></tr>
+      <tr><td class="param-name">user</td><td>string</td><td><span class="param-req">WAJIB</span></td><td>Username</td></tr>
+      <tr><td class="param-name">quota</td><td>integer</td><td><span class="param-opt">OPSIONAL</span></td><td>Quota GB (0=unlimited)</td></tr>
+      <tr><td class="param-name">limitip</td><td>integer</td><td><span class="param-opt">OPSIONAL</span></td><td>Limit IP</td></tr>
+      <tr><td class="param-name">exp</td><td>integer</td><td><span class="param-req">WAJIB</span></td><td>Expired (hari)</td></tr>
+    </table>
+  </div>
+</div>
+
+</div>
+
+<footer>ARISCTUNNEL V4 API Documentation &bull; Auto-generated &bull; <a href="https://t.me/ARI_VPN_STORE" style="color:#58a6ff">@ARI_VPN_STORE</a></footer>
+
+<script>
+function copyText(btn) {
+  const block = btn.parentElement;
+  const text = block.innerText.replace('Copy','').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+</script>
+</body>
+</html>
