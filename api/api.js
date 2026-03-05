@@ -1259,192 +1259,255 @@ function handleDeleteTrojan(params, res) {
 }
 
 // ─── Renew SSH ────────────────────────────────────────────────────────────────
+// ─── Helper: safe file line-replace using Node.js fs (no shell sed) ──────────
+function fileReplaceLines(filePath, matchFn, replaceFn) {
+  // Returns { ok, linesChanged }
+  try {
+    const raw   = fs.readFileSync(filePath, 'utf8');
+    let changed = 0;
+    const out   = raw.split('\n').map(line => {
+      if (matchFn(line)) { changed++; return replaceFn(line); }
+      return line;
+    }).join('\n');
+    if (changed > 0) fs.writeFileSync(filePath, out, 'utf8');
+    return { ok: true, linesChanged: changed };
+  } catch { return { ok: false, linesChanged: 0 }; }
+}
+
+// ─── Helper: find line and extract 3rd token (date field) ────────────────────
+function fileGetExpiry(filePath, matchFn) {
+  try {
+    const raw  = fs.readFileSync(filePath, 'utf8');
+    const line = raw.split('\n').find(l => matchFn(l)) || '';
+    return line.trim().split(/\s+/)[2] || '';   // index 2 = YYYY-MM-DD
+  } catch { return ''; }
+}
+
+// ─── Helper: calculate new expiry (extend from current or today if expired) ──
+function calcNewExpiry(curExpStr, days) {
+  let base = curExpStr ? new Date(curExpStr + 'T00:00:00') : new Date();
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  if (isNaN(base.getTime()) || base < now) base = new Date(now);
+  base.setDate(base.getDate() + days);
+  return base;
+}
+
+// ─── Renew SSH ────────────────────────────────────────────────────────────────
 function handleRenewSSH(params, res) {
-  const username = params.num || params.username || params.user;
-  const exp      = params.exp;
-  if (!username || !exp)
-    return sendJSON(res, 400, { status: 'error', message: 'Required: num (username), exp (days)' });
+  try {
+    const username = params.num || params.username || params.user;
+    const exp      = params.exp;
+    if (!username || !exp)
+      return sendJSON(res, 400, { status: 'error', message: 'Required: num (username), exp (days)' });
 
-  // Check user exists
-  const exists = execCmd(`id "${username}" 2>/dev/null`);
-  if (!exists.ok)
-    return sendJSON(res, 404, { status: 'error', message: `SSH account ${username} not found` });
+    const days = parseInt(exp);
+    if (isNaN(days) || days < 1)
+      return sendJSON(res, 400, { status: 'error', message: 'exp must be a positive integer (days)' });
 
-  const days = parseInt(exp);
-  if (isNaN(days) || days < 1)
-    return sendJSON(res, 400, { status: 'error', message: 'exp must be a positive integer (days)' });
+    // Validate user exists
+    const exists = execCmd(`id "${username}" 2>/dev/null`);
+    if (!exists.ok)
+      return sendJSON(res, 404, { status: 'error', message: `SSH account ${username} not found` });
 
-  // Get current expiry from .ssh.db (field 6-8 = "DD Mon, YYYY")
-  const dbLine  = execCmd(`grep -wE "^#ssh# ${username} " /etc/ssh/.ssh.db 2>/dev/null`);
-  const prevExp = dbLine.out.trim().split(/\s+/).slice(5, 8).join(' ') || 'unknown';
+    // Read previous expiry from .ssh.db — line format: #ssh# USER PASS 0 LIMITIP DD Mon, YYYY
+    const SSH_DB = '/etc/ssh/.ssh.db';
+    let prevExp = 'unknown';
+    try {
+      const dbLine = fs.readFileSync(SSH_DB, 'utf8').split('\n')
+        .find(l => l.startsWith(`#ssh# ${username} `)) || '';
+      const parts = dbLine.trim().split(/\s+/);
+      // parts: [#ssh#, user, pass, 0, limitip, DD, Mon,, YYYY]
+      prevExp = parts.slice(5).join(' ').replace(/,$/, '').trim() || 'unknown';
+    } catch {}
 
-  // Calculate new expiry date
-  const newExpDate = new Date();
-  newExpDate.setDate(newExpDate.getDate() + days);
-  const newExpISO  = newExpDate.toISOString().split('T')[0];           // YYYY-MM-DD
-  const newExpStr  = formatDateShort(newExpDate);                       // DD Mon, YYYY
-  const newExpUnix = Math.floor(newExpDate.getTime() / 1000);
+    const newExpDate = calcNewExpiry('', days); // SSH always extends from today
+    const newExpISO  = newExpDate.toISOString().split('T')[0];
+    const newExpStr  = formatDateShort(newExpDate);
 
-  // Update system user expiry + unlock
-  execCmd(`usermod -e "${newExpISO}" "${username}" 2>/dev/null || true`);
-  execCmd(`passwd -u "${username}" 2>/dev/null || true`);
+    // Update system account
+    execCmd(`usermod -e "${newExpISO}" "${username}" 2>/dev/null || true`);
+    execCmd(`passwd -u "${username}" 2>/dev/null || true`);
 
-  // Update .ssh.db  — replace old exp string with new
-  execCmd(`sed -i "s/^#ssh# ${username} .*$/#ssh# ${username} 0 1 ${newExpStr}/" /etc/ssh/.ssh.db 2>/dev/null || true`);
-  execCmd(`rm -f /etc/kyt/limit/ssh/ip/${username}`);
+    // Update .ssh.db using fs (no shell sed with special chars)
+    fileReplaceLines(SSH_DB,
+      l => l.startsWith(`#ssh# ${username} `),
+      l => {
+        const p = l.trim().split(/\s+/);
+        // keep: #ssh# user pass 0 limitip — replace exp
+        const keep = p.slice(0, 5).join(' ');
+        return `${keep} ${newExpStr}`;
+      }
+    );
 
-  sendJSON(res, 200, {
-    status: 'success',
-    data: {
-      username,
-      previous_expiry: prevExp,
-      days_added: days,
-      expired: newExpISO,
-      new_expiry_display: newExpStr
-    }
-  });
+    execCmd(`rm -f /etc/kyt/limit/ssh/ip/${username} 2>/dev/null || true`);
+
+    sendJSON(res, 200, {
+      status: 'success',
+      data: { username, previous_expiry: prevExp, days_added: days, expired: newExpISO, new_expiry_display: newExpStr }
+    });
+  } catch (e) {
+    sendJSON(res, 500, { status: 'error', message: e.message });
+  }
 }
 
 // ─── Renew VMess ──────────────────────────────────────────────────────────────
 function handleRenewVmess(params, res) {
-  const username = params.num || params.username || params.user;
-  const exp      = params.exp;
-  if (!username || !exp)
-    return sendJSON(res, 400, { status: 'error', message: 'Required: num (username), exp (days)' });
+  try {
+    const username = params.num || params.username || params.user;
+    const exp      = params.exp;
+    if (!username || !exp)
+      return sendJSON(res, 400, { status: 'error', message: 'Required: num (username), exp (days)' });
 
-  const days = parseInt(exp);
-  if (isNaN(days) || days < 1)
-    return sendJSON(res, 400, { status: 'error', message: 'exp must be a positive integer (days)' });
+    const days = parseInt(exp);
+    if (isNaN(days) || days < 1)
+      return sendJSON(res, 400, { status: 'error', message: 'exp must be a positive integer (days)' });
 
-  // Get current expiry from config.json  e.g. "### user 2026-03-06"
-  const cfgLine = execCmd(`grep -wE "^### ${username} " /etc/xray/config.json 2>/dev/null`);
-  if (!cfgLine.out.trim())
-    return sendJSON(res, 404, { status: 'error', message: `VMess account ${username} not found` });
+    const CFG_JSON = '/etc/xray/config.json';
+    const VMESS_DB = '/etc/vmess/.vmess.db';
 
-  const curExpStr = cfgLine.out.trim().split(/\s+/)[2] || '';          // YYYY-MM-DD
-  const prevExp   = curExpStr ? formatDateShort(new Date(curExpStr + 'T00:00:00')) : 'unknown';
+    // Find current expiry — line format: ### username YYYY-MM-DD
+    const curExpStr = fileGetExpiry(CFG_JSON, l => l.startsWith(`### ${username} `));
+    if (!curExpStr)
+      return sendJSON(res, 404, { status: 'error', message: `VMess account ${username} not found` });
 
-  // Calculate new expiry: current_exp + days
-  let baseDate = curExpStr ? new Date(curExpStr + 'T00:00:00') : new Date();
-  const now = new Date(); now.setHours(0,0,0,0);
-  if (baseDate < now) baseDate = now;                                   // if already expired, extend from today
-  baseDate.setDate(baseDate.getDate() + days);
-  const newExpISO = baseDate.toISOString().split('T')[0];
-  const newExpStr = formatDateShort(baseDate);
+    const prevExp   = formatDateShort(new Date(curExpStr + 'T00:00:00'));
+    const newExpDate = calcNewExpiry(curExpStr, days);
+    const newExpISO  = newExpDate.toISOString().split('T')[0];
+    const newExpStr  = formatDateShort(newExpDate);
 
-  // Update config.json (main ws & grpc lines)
-  const mainR  = execCmd(`sed -i "s/^### ${username} .*$/### ${username} ${newExpISO}/" /etc/xray/config.json 2>/dev/null`);
-  const grpcR  = execCmd(`grep -c "^### ${username} " /etc/xray/config.json 2>/dev/null`);
-  const grpcUpdated = parseInt(grpcR.out.trim()) > 1;
+    // Update config.json — replace ALL "### username YYYY-MM-DD" lines (ws + grpc)
+    const cfgResult = fileReplaceLines(CFG_JSON,
+      l => l.startsWith(`### ${username} `),
+      () => `### ${username} ${newExpISO}`
+    );
 
-  // Update .vmess.db
-  execCmd(`sed -i "s/^### ${username} .*$/### ${username} ${newExpISO}/" /etc/vmess/.vmess.db 2>/dev/null || true`);
-  execCmd(`systemctl restart xray 2>/dev/null || true`);
+    // Update .vmess.db — line format: ### username YYYY-MM-DD uuid quota limitip
+    fileReplaceLines(VMESS_DB,
+      l => l.startsWith(`### ${username} `),
+      l => {
+        const p = l.trim().split(/\s+/);
+        // replace date (index 2), keep rest
+        p[2] = newExpISO;
+        return p.join(' ');
+      }
+    );
 
-  sendJSON(res, 200, {
-    status: 'success',
-    data: {
-      username,
-      previous_expiry: prevExp,
-      days_added: days,
-      expired: newExpISO,
-      new_expiry_display: newExpStr,
-      main_updated: mainR.ok,
-      grpc_updated: grpcUpdated
-    }
-  });
+    execCmd('systemctl restart xray 2>/dev/null || true');
+
+    sendJSON(res, 200, {
+      status: 'success',
+      data: {
+        username, previous_expiry: prevExp, days_added: days,
+        expired: newExpISO, new_expiry_display: newExpStr,
+        main_updated: cfgResult.linesChanged > 0,
+        grpc_updated: cfgResult.linesChanged > 1
+      }
+    });
+  } catch (e) {
+    sendJSON(res, 500, { status: 'error', message: e.message });
+  }
 }
 
 // ─── Renew VLess ──────────────────────────────────────────────────────────────
 function handleRenewVless(params, res) {
-  const username = params.num || params.username || params.user;
-  const exp      = params.exp;
-  if (!username || !exp)
-    return sendJSON(res, 400, { status: 'error', message: 'Required: num (username), exp (days)' });
+  try {
+    const username = params.num || params.username || params.user;
+    const exp      = params.exp;
+    if (!username || !exp)
+      return sendJSON(res, 400, { status: 'error', message: 'Required: num (username), exp (days)' });
 
-  const days = parseInt(exp);
-  if (isNaN(days) || days < 1)
-    return sendJSON(res, 400, { status: 'error', message: 'exp must be a positive integer (days)' });
+    const days = parseInt(exp);
+    if (isNaN(days) || days < 1)
+      return sendJSON(res, 400, { status: 'error', message: 'exp must be a positive integer (days)' });
 
-  const cfgLine = execCmd(`grep -wE "^#& ${username} " /etc/xray/config.json 2>/dev/null`);
-  if (!cfgLine.out.trim())
-    return sendJSON(res, 404, { status: 'error', message: `VLess account ${username} not found` });
+    const CFG_JSON = '/etc/xray/config.json';
+    const VLESS_DB = '/etc/vless/.vless.db';
 
-  const curExpStr = cfgLine.out.trim().split(/\s+/)[2] || '';
-  const prevExp   = curExpStr ? formatDateShort(new Date(curExpStr + 'T00:00:00')) : 'unknown';
+    // VLess lines: #& username YYYY-MM-DD
+    const curExpStr = fileGetExpiry(CFG_JSON, l => l.startsWith(`#& ${username} `));
+    if (!curExpStr)
+      return sendJSON(res, 404, { status: 'error', message: `VLess account ${username} not found` });
 
-  let baseDate = curExpStr ? new Date(curExpStr + 'T00:00:00') : new Date();
-  const now = new Date(); now.setHours(0,0,0,0);
-  if (baseDate < now) baseDate = now;
-  baseDate.setDate(baseDate.getDate() + days);
-  const newExpISO = baseDate.toISOString().split('T')[0];
-  const newExpStr = formatDateShort(baseDate);
+    const prevExp    = formatDateShort(new Date(curExpStr + 'T00:00:00'));
+    const newExpDate = calcNewExpiry(curExpStr, days);
+    const newExpISO  = newExpDate.toISOString().split('T')[0];
+    const newExpStr  = formatDateShort(newExpDate);
 
-  const mainR = execCmd(`sed -i "s/^#& ${username} .*$/#& ${username} ${newExpISO}/" /etc/xray/config.json 2>/dev/null`);
-  const grpcR = execCmd(`grep -c "^#& ${username} " /etc/xray/config.json 2>/dev/null`);
-  const grpcUpdated = parseInt(grpcR.out.trim()) > 1;
+    const cfgResult = fileReplaceLines(CFG_JSON,
+      l => l.startsWith(`#& ${username} `),
+      () => `#& ${username} ${newExpISO}`
+    );
 
-  execCmd(`sed -i "s/^#& ${username} .*$/#& ${username} ${newExpISO}/" /etc/vless/.vless.db 2>/dev/null || true`);
-  execCmd(`systemctl restart xray 2>/dev/null || true`);
+    fileReplaceLines(VLESS_DB,
+      l => l.startsWith(`#& ${username} `),
+      l => { const p = l.trim().split(/\s+/); p[2] = newExpISO; return p.join(' '); }
+    );
 
-  sendJSON(res, 200, {
-    status: 'success',
-    data: {
-      username,
-      previous_expiry: prevExp,
-      days_added: days,
-      expired: newExpISO,
-      new_expiry_display: newExpStr,
-      main_updated: mainR.ok,
-      grpc_updated: grpcUpdated
-    }
-  });
+    execCmd('systemctl restart xray 2>/dev/null || true');
+
+    sendJSON(res, 200, {
+      status: 'success',
+      data: {
+        username, previous_expiry: prevExp, days_added: days,
+        expired: newExpISO, new_expiry_display: newExpStr,
+        main_updated: cfgResult.linesChanged > 0,
+        grpc_updated: cfgResult.linesChanged > 1
+      }
+    });
+  } catch (e) {
+    sendJSON(res, 500, { status: 'error', message: e.message });
+  }
 }
 
 // ─── Renew Trojan ─────────────────────────────────────────────────────────────
 function handleRenewTrojan(params, res) {
-  const username = params.num || params.username || params.user;
-  const exp      = params.exp;
-  if (!username || !exp)
-    return sendJSON(res, 400, { status: 'error', message: 'Required: num (username), exp (days)' });
+  try {
+    const username = params.num || params.username || params.user;
+    const exp      = params.exp;
+    if (!username || !exp)
+      return sendJSON(res, 400, { status: 'error', message: 'Required: num (username), exp (days)' });
 
-  const days = parseInt(exp);
-  if (isNaN(days) || days < 1)
-    return sendJSON(res, 400, { status: 'error', message: 'exp must be a positive integer (days)' });
+    const days = parseInt(exp);
+    if (isNaN(days) || days < 1)
+      return sendJSON(res, 400, { status: 'error', message: 'exp must be a positive integer (days)' });
 
-  const cfgLine = execCmd(`grep -wE "^#! ${username} " /etc/xray/config.json 2>/dev/null`);
-  if (!cfgLine.out.trim())
-    return sendJSON(res, 404, { status: 'error', message: `Trojan account ${username} not found` });
+    const CFG_JSON  = '/etc/xray/config.json';
+    const TROJAN_DB = '/etc/trojan/.trojan.db';
 
-  const curExpStr = cfgLine.out.trim().split(/\s+/)[2] || '';
-  const prevExp   = curExpStr ? formatDateShort(new Date(curExpStr + 'T00:00:00')) : 'unknown';
+    // Trojan lines: #! username YYYY-MM-DD
+    const curExpStr = fileGetExpiry(CFG_JSON, l => l.startsWith(`#! ${username} `));
+    if (!curExpStr)
+      return sendJSON(res, 404, { status: 'error', message: `Trojan account ${username} not found` });
 
-  let baseDate = curExpStr ? new Date(curExpStr + 'T00:00:00') : new Date();
-  const now = new Date(); now.setHours(0,0,0,0);
-  if (baseDate < now) baseDate = now;
-  baseDate.setDate(baseDate.getDate() + days);
-  const newExpISO = baseDate.toISOString().split('T')[0];
-  const newExpStr = formatDateShort(baseDate);
+    const prevExp    = formatDateShort(new Date(curExpStr + 'T00:00:00'));
+    const newExpDate = calcNewExpiry(curExpStr, days);
+    const newExpISO  = newExpDate.toISOString().split('T')[0];
+    const newExpStr  = formatDateShort(newExpDate);
 
-  const mainR = execCmd(`sed -i "s/^#! ${username} .*$/#! ${username} ${newExpISO}/" /etc/xray/config.json 2>/dev/null`);
-  const grpcR = execCmd(`grep -c "^#! ${username} " /etc/xray/config.json 2>/dev/null`);
-  const grpcUpdated = parseInt(grpcR.out.trim()) > 1;
+    const cfgResult = fileReplaceLines(CFG_JSON,
+      l => l.startsWith(`#! ${username} `),
+      () => `#! ${username} ${newExpISO}`
+    );
 
-  execCmd(`sed -i "s/^#! ${username} .*$/#! ${username} ${newExpISO}/" /etc/trojan/.trojan.db 2>/dev/null || true`);
-  execCmd(`systemctl restart xray 2>/dev/null || true`);
+    fileReplaceLines(TROJAN_DB,
+      l => l.startsWith(`#! ${username} `),
+      l => { const p = l.trim().split(/\s+/); p[2] = newExpISO; return p.join(' '); }
+    );
 
-  sendJSON(res, 200, {
-    status: 'success',
-    data: {
-      username,
-      previous_expiry: prevExp,
-      days_added: days,
-      expired: newExpISO,
-      new_expiry_display: newExpStr,
-      main_updated: mainR.ok,
-      grpc_updated: grpcUpdated
-    }
-  });
+    execCmd('systemctl restart xray 2>/dev/null || true');
+
+    sendJSON(res, 200, {
+      status: 'success',
+      data: {
+        username, previous_expiry: prevExp, days_added: days,
+        expired: newExpISO, new_expiry_display: newExpStr,
+        main_updated: cfgResult.linesChanged > 0,
+        grpc_updated: cfgResult.linesChanged > 1
+      }
+    });
+  } catch (e) {
+    sendJSON(res, 500, { status: 'error', message: e.message });
+  }
 }
 
 // ─── Server & Router ─────────────────────────────────────────────────────────
