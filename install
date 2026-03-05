@@ -16,102 +16,192 @@ TIMES="10"
 CHATID="1962185w1"
 KEY="8238209608:AAGflWVJF0FgShY"
 URL="https://api.telegram.org/bot$KEY/sendMessage"
+
+# ─── Spinner / Loading Animation ─────────────────────────────────────────────
+spinner_pid=""
+
+start_spinner() {
+  local label="${1:-Installing...}"
+  local frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+  local colors=("\033[96m" "\033[94m" "\033[95m" "\033[92m")
+  local i=0 c=0
+  (
+    tput civis 2>/dev/null || true
+    while true; do
+      local frame="${frames[$((i % ${#frames[@]}))]}"
+      local col="${colors[$((c % ${#colors[@]}))]}"
+      printf "\r  ${col}${frame}\033[0m  \033[97m%-55s\033[0m" "$label"
+      i=$((i + 1))
+      [[ $((i % 10)) -eq 0 ]] && c=$((c + 1))
+      sleep 0.08
+    done
+  ) &
+  spinner_pid=$!
+  disown $spinner_pid 2>/dev/null || true
+}
+
+stop_spinner() {
+  local status="${1:-0}"
+  if [[ -n "$spinner_pid" ]]; then
+    kill "$spinner_pid" 2>/dev/null || true
+    wait "$spinner_pid" 2>/dev/null || true
+    spinner_pid=""
+  fi
+  tput cnorm 2>/dev/null || true
+  if [[ "$status" -eq 0 ]]; then
+    printf "\r  \033[92m✔\033[0m  %-55s\n" "${2:-Done}"
+  else
+    printf "\r  \033[91m✖\033[0m  %-55s\n" "${2:-Failed}"
+  fi
+}
+
+# Wrapper: jalankan perintah dengan spinner, sembunyikan semua output
+run_quiet() {
+  local label="$1"; shift
+  start_spinner "$label"
+  "$@" > /dev/null 2>&1
+  local rc=$?
+  stop_spinner $rc "$label"
+  return $rc
+}
+
+# ─── Wrappers untuk package manager ──────────────────────────────────────────
+apt_install() {
+  local label="Menginstall: $*"
+  start_spinner "$label"
+  DEBIAN_FRONTEND=noninteractive apt-get install -y "$@" > /dev/null 2>&1
+  local rc=$?
+  stop_spinner $rc "$label"
+  return $rc
+}
+
+apt_update() {
+  run_quiet "Memperbarui daftar paket..." apt-get update -y
+}
+
+apt_upgrade() {
+  run_quiet "Upgrade paket sistem..." DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
+}
+
+apt_dist_upgrade() {
+  run_quiet "Dist-upgrade paket sistem..." DEBIAN_FRONTEND=noninteractive apt-get dist-upgrade -y
+}
+
+gem_install() {
+  run_quiet "Menginstall gem: $*" gem install "$@"
+}
+
+npm_install() {
+  run_quiet "Menginstall npm: $*" npm install "$@"
+}
+
+pip_install() {
+  run_quiet "Menginstall pip: $*" pip3 install "$@"
+}
+
+wget_quiet() {
+  local label="Mengunduh: $1"
+  local args=("${@:2}")
+  start_spinner "$label"
+  wget -q "${args[@]}" > /dev/null 2>&1
+  local rc=$?
+  stop_spinner $rc "$label"
+  return $rc
+}
+
+curl_quiet() {
+  run_quiet "Mengunduh dengan curl..." curl -s "$@"
+}
+
+# ─── Utility functions ────────────────────────────────────────────────────────
 function print_ok() {
 echo -e "${OK} ${BLUE} $1 ${FONT}"
 }
 function print_install() {
-echo -e "${green} =============================== ${FONT}"
-echo -e "${YELLOW} # $1 ${FONT}"
-echo -e "${green} =============================== ${FONT}"
-sleep 1
+echo ""
+echo -e "\033[96;1m  ┌──────────────────────────────────────────────────┐\033[0m"
+echo -e "\033[96;1m  │\033[0m  \033[93;1m⚙  $1\033[0m"
+echo -e "\033[96;1m  └──────────────────────────────────────────────────┘\033[0m"
+echo ""
+sleep 0.5
 }
 function print_error() {
 echo -e "${ERROR} ${REDBG} $1 ${FONT}"
 }
 function print_success() {
 if [[ 0 -eq $? ]]; then
-echo -e "${green} =============================== ${FONT}"
-echo -e "${Green} # $1 berhasil dipasang"
-echo -e "${green} =============================== ${FONT}"
-sleep 2
+echo ""
+echo -e "\033[92;1m  ✔  $1 berhasil dipasang\033[0m"
+echo ""
+sleep 1
 fi
 }
-# ── Spinner / Loading animation ────────────────────────────────────────────────
-SPINNER_PID=""
-function start_spinner() {
-  local msg="${1:-Loading...}"
-  local spinstr='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
-  tput civis 2>/dev/null
-  (
-    i=0
-    while true; do
-      c="${spinstr:$((i % ${#spinstr})):1}"
-      printf "\r  \033[96;1m%s\033[0m  \033[97m%s\033[0m   " "$c" "$msg"
-      sleep 0.08
-      ((i++))
-    done
-  ) &
-  SPINNER_PID=$!
-}
-function stop_spinner() {
-  local status="${1:-0}"
-  if [[ -n "$SPINNER_PID" ]]; then
-    kill "$SPINNER_PID" 2>/dev/null
-    wait "$SPINNER_PID" 2>/dev/null
-    SPINNER_PID=""
-  fi
-  tput cnorm 2>/dev/null
-  if [[ "$status" -eq 0 ]]; then
-    printf "\r  \033[92;1m✔\033[0m  %-55s\n" "${SPINNER_MSG:-Done}"
-  else
-    printf "\r  \033[91;1m✘\033[0m  %-55s\n" "${SPINNER_MSG:-Failed}"
-  fi
-}
-# Wrapper: run a command silently with spinner
-# Usage: run_loading "Label" command [args...]
-function run_loading() {
-  SPINNER_MSG="$1"
-  shift
-  start_spinner "$SPINNER_MSG"
-  "$@" >/tmp/install_log.txt 2>&1
-  local rc=$?
-  stop_spinner $rc
-  return $rc
-}
-# ───────────────────────────────────────────────────────────────────────────────
+
 clear
 . /etc/os-release
-# ── Support all versions of Debian & Ubuntu ──────────────────────────────────
-if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
-  echo -e "\e[92m✔️ Deteksi OS berhasil: $PRETTY_NAME\e[0m"
+if [[ "$ID" != "ubuntu" || "$VERSION_ID" != "20.04" ]]; then
+echo -e "\e[91m❌ OS saat ini ($PRETTY_NAME) bukan Ubuntu 20.04\e[0m"
+echo "➡️ Menjalankan reinstall otomatis ke Ubuntu 20.04..."
+apt_update
+run_quiet "Mengunduh reinstall.sh..." wget https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh -O /tmp/reinstall.sh
+chmod +x /tmp/reinstall.sh
+bash /tmp/reinstall.sh ubuntu 20.04
+reboot
 else
-  echo -e "\e[91m❌ OS tidak didukung: $PRETTY_NAME\e[0m"
-  echo -e "\e[93m  Script ini hanya mendukung Debian & Ubuntu (semua versi)\e[0m"
-  exit 1
+echo -e "\e[92m✔️ Deteksi OS berhasil: $PRETTY_NAME\e[0m"
 fi
-# Detect OS version for conditional logic
-OS_ID="$ID"
-OS_VERSION_ID="$VERSION_ID"
-OS_MAJOR_VERSION=$(echo "$VERSION_ID" | cut -d. -f1)
-run_loading "Update daftar paket..." apt-get update -y
-run_loading "Install wget & curl..." apt-get install -y wget curl
+
+apt_update
+apt_install wget curl
+
 print_install "Menambakan Data Izin Akses Script"
 rm -rf fix-izin.sh
-run_loading "Download fix-izin.sh..." wget -O fix-izin.sh https://raw.githubusercontent.com/AutoNV/gh/main/fix-izin.sh
+run_quiet "Mengunduh fix-izin.sh..." wget -O fix-izin.sh https://raw.githubusercontent.com/AutoNV/gh/main/fix-izin.sh
 chmod +x fix-izin.sh
-run_loading "Menjalankan fix-izin..." bash fix-izin.sh
+run_quiet "Menjalankan fix-izin.sh..." bash fix-izin.sh
+
 print_install "Menginstall Packet Yang Dibutuhkan"
 export DEBIAN_FRONTEND=noninteractive
 echo 'openssh-server openssh-server/keep-obsolete-conffile boolean true' | debconf-set-selections
-run_loading "apt update & upgrade..." bash -c "apt-get update -y && apt-get upgrade -y && apt-get dist-upgrade -y"
-run_loading "Install utilitas dasar..." apt-get install -y iputils-ping bzip2 gzip xz-utils jq curl lolcat figlet at zip pwgen openssl netcat socat cron bash-completion wondershaper
-run_loading "gem install lolcat..." gem install lolcat -y
-run_loading "Setup chrony / NTP..." bash -c "systemctl enable chronyd 2>/dev/null; systemctl restart chronyd 2>/dev/null; systemctl enable chrony 2>/dev/null; systemctl restart chrony 2>/dev/null; chronyc sourcestats -v 2>/dev/null; chronyc tracking -v 2>/dev/null"
-run_loading "Sinkronisasi waktu NTP..." bash -c "apt-get install -y ntpdate && ntpdate pool.ntp.org"
-run_loading "Bersihkan paket tidak diperlukan..." bash -c "apt-get install -y sudo debconf-utils software-properties-common && apt-get clean && apt-get autoremove -y && apt-get remove --purge -y exim4 ufw firewalld 2>/dev/null; true"
+apt_update
+apt_upgrade
+apt_dist_upgrade
+apt_install iputils-ping
+apt_install bzip2
+apt_install gzip
+apt_install xz-utils
+apt_install jq curl
+apt_install wondershaper
+apt_install lolcat
+gem_install lolcat
+apt_install at
+apt_install zip pwgen openssl netcat socat cron bash-completion
+apt_install figlet
+apt_update
+apt_upgrade
+apt_dist_upgrade
+
+run_quiet "Mengaktifkan chronyd..." systemctl enable chronyd
+run_quiet "Merestart chronyd..." systemctl restart chronyd
+run_quiet "Mengaktifkan chrony..." systemctl enable chrony
+run_quiet "Merestart chrony..." systemctl restart chrony
+run_quiet "chronyc sourcestats..." chronyc sourcestats -v
+run_quiet "chronyc tracking..." chronyc tracking -v
+
+apt_install ntpdate
+run_quiet "Sinkronisasi NTP..." ntpdate pool.ntp.org
+apt_install sudo
+run_quiet "apt-get clean..." apt-get clean all -y
+run_quiet "apt-get autoremove..." apt-get autoremove -y
+apt_install debconf-utils
+run_quiet "Hapus exim4..." apt-get remove --purge exim4 -y
+run_quiet "Hapus ufw firewalld..." apt-get remove --purge ufw firewalld -y
+apt_install --no-install-recommends software-properties-common
+
 echo iptables-persistent iptables-persistent/autosave_v4 boolean true | debconf-set-selections
 echo iptables-persistent iptables-persistent/autosave_v6 boolean true | debconf-set-selections
-run_loading "Install semua dependensi (harap tunggu)..." apt-get install -y speedtest-cli vnstat libnss3-dev libnspr4-dev pkg-config libpam0g-dev libcap-ng-dev libcap-ng-utils libselinux1-dev libcurl4-nss-dev flex bison make libnss3-tools libevent-dev bc rsyslog dos2unix zlib1g-dev libssl-dev libsqlite3-dev sed dirmngr libxml-parser-perl build-essential gcc g++ python3 htop lsof tar wget curl ruby zip unzip p7zip-full python3-pip libc6 util-linux msmtp-mta ca-certificates bsd-mailx iptables iptables-persistent netfilter-persistent net-tools openssl gnupg gnupg2 lsb-release shc cmake git screen socat xz-utils apt-transport-https gnupg1 dnsutils cron bash-completion ntpdate chrony jq openvpn easy-rsa
+apt_install speedtest-cli vnstat libnss3-dev libnspr4-dev pkg-config libpam0g-dev libcap-ng-dev libcap-ng-utils libselinux1-dev libcurl4-nss-dev flex bison make libnss3-tools libevent-dev bc rsyslog dos2unix zlib1g-dev libssl-dev libsqlite3-dev sed dirmngr libxml-parser-perl build-essential gcc g++ python htop lsof tar wget curl ruby zip unzip p7zip-full python3-pip libc6 util-linux build-essential msmtp-mta ca-certificates bsd-mailx iptables iptables-persistent netfilter-persistent net-tools openssl ca-certificates gnupg gnupg2 ca-certificates lsb-release gcc shc make cmake git screen socat xz-utils apt-transport-https gnupg1 dnsutils cron bash-completion ntpdate chrony jq openvpn easy-rsa
+
 clear
 echo -e ""
 if [[ $( uname -m | awk '{print $1}' ) == "x86_64" ]]; then
@@ -120,12 +210,12 @@ else
 echo -e "${EROR} Your Architecture Is Not Supported ( ${YELLOW}$( uname -m )${NC} )"
 exit 1
 fi
-if [[ $( cat /etc/os-release | grep -w ID | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/ID//g' ) == "ubuntu" ]]; then
-echo -e "${OK} Your OS Is Supported ( ${green}$( cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/PRETTY_NAME//g' )${NC} )"
-elif [[ $( cat /etc/os-release | grep -w ID | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/ID//g' ) == "debian" ]]; then
-echo -e "${OK} Your OS Is Supported ( ${green}$( cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/PRETTY_NAME//g' )${NC} )"
+if [[ $( cat /etc/os-release | grep -w ID | head -n1 | sed 's/=//g' | sed 's/\"//g' | sed 's/ID//g' ) == "ubuntu" ]]; then
+echo -e "${OK} Your OS Is Supported ( ${green}$( cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/\"//g' | sed 's/PRETTY_NAME//g' )${NC} )"
+elif [[ $( cat /etc/os-release | grep -w ID | head -n1 | sed 's/=//g' | sed 's/\"//g' | sed 's/ID//g' ) == "debian" ]]; then
+echo -e "${OK} Your OS Is Supported ( ${green}$( cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/\"//g' | sed 's/PRETTY_NAME//g' )${NC} )"
 else
-echo -e "${EROR} Your OS Is Not Supported ( ${YELLOW}$( cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/PRETTY_NAME//g' )${NC} )"
+echo -e "${EROR} Your OS Is Not Supported ( ${YELLOW}$( cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/\"//g' | sed 's/PRETTY_NAME//g' )${NC} )"
 exit 1
 fi
 if [[ $ipsaya == "" ]]; then
@@ -145,7 +235,7 @@ if [ "$(systemd-detect-virt)" == "openvz" ]; then
 echo "OpenVZ is not supported"
 exit 1
 fi
-echo -e "\e[32mloading...\e[0m"
+
 clear
 REPO="https://raw.githubusercontent.com/AutoNV/gh/main/"
 start=$(date +%s)
@@ -159,6 +249,7 @@ else
 print_error "The current user is not the root user, please switch to the root user and run the script again"
 fi
 }
+
 clear
 print_install "Membuat direktori xray"
 mkdir -p /etc/xray
@@ -181,49 +272,49 @@ done < /proc/meminfo
 Ram_Usage="$((mem_used / 1024))"
 Ram_Total="$((mem_total / 1024))"
 export tanggal=`date -d "0 days" +"%d-%m-%Y - %X" `
-export OS_Name=$( cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/PRETTY_NAME//g' | sed 's/=//g' | sed 's/"//g' )
+export OS_Name=$( cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/PRETTY_NAME//g' | sed 's/=//g' | sed 's/\"//g' )
 export Kernel=$( uname -r )
 export Arch=$( uname -m )
 export IP=$( curl -s https://ipinfo.io/ip/ )
+
 function first_setup(){
 timedatectl set-timezone Asia/Jakarta
 echo iptables-persistent iptables-persistent/autosave_v4 boolean true | debconf-set-selections
 echo iptables-persistent iptables-persistent/autosave_v6 boolean true | debconf-set-selections
 print_success "Directory Xray"
-. /etc/os-release
-echo "Setup Dependencies for $PRETTY_NAME"
-sudo apt update -y
-if [[ "$ID" == "ubuntu" ]]; then
-  # Ubuntu: use official haproxy PPA (supports all Ubuntu versions)
-  apt-get install -y --no-install-recommends software-properties-common
-  add-apt-repository ppa:vbernat/haproxy-2.8 -y
-  apt-get update -y
-  apt-get -y install haproxy
-elif [[ "$ID" == "debian" ]]; then
-  # Debian: use haproxy.debian.net repo, auto-detect codename
-  CODENAME=$(lsb_release -sc 2>/dev/null || echo "$VERSION_CODENAME")
-  curl -fsSL https://haproxy.debian.net/bernat.debian.org.gpg     | gpg --dearmor -o /usr/share/keyrings/haproxy.debian.net.gpg
-  echo "deb [signed-by=/usr/share/keyrings/haproxy.debian.net.gpg] http://haproxy.debian.net ${CODENAME}-backports-2.8 main"     > /etc/apt/sources.list.d/haproxy.list
-  sudo apt-get update -y
-  apt-get -y install haproxy
+if [[ $(cat /etc/os-release | grep -w ID | head -n1 | sed 's/=//g' | sed 's/\"//g' | sed 's/ID//g') == "ubuntu" ]]; then
+echo "Setup Dependencies $(cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/\"//g' | sed 's/PRETTY_NAME//g')"
+apt_update
+run_quiet "Menambah PPA haproxy..." add-apt-repository ppa:vbernat/haproxy-2.0 -y
+apt_install haproxy=2.0.\*
+elif [[ $(cat /etc/os-release | grep -w ID | head -n1 | sed 's/=//g' | sed 's/\"//g' | sed 's/ID//g') == "debian" ]]; then
+echo "Setup Dependencies For OS Is $(cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/\"//g' | sed 's/PRETTY_NAME//g')"
+run_quiet "Mengunduh GPG haproxy..." curl https://haproxy.debian.net/bernat.debian.org.gpg | gpg --dearmor >/usr/share/keyrings/haproxy.debian.net.gpg
+echo deb "[signed-by=/usr/share/keyrings/haproxy.debian.net.gpg]" \
+http://haproxy.debian.net buster-backports-1.8 main \
+>/etc/apt/sources.list.d/haproxy.list
+apt_update
+apt_install haproxy=1.8.\*
 else
-  echo -e " Your OS Is Not Supported ($PRETTY_NAME)"
-  exit 1
+echo -e " Your OS Is Not Supported ($(cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/\"//g' | sed 's/PRETTY_NAME//g') )"
+exit 1
 fi
 }
+
 clear
 function nginx_install() {
 clear
-if [[ $(cat /etc/os-release | grep -w ID | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/ID//g') == "ubuntu" ]]; then
-print_install "Setup nginx For OS Is $(cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/PRETTY_NAME//g')"
-sudo apt-get install nginx -y
-elif [[ $(cat /etc/os-release | grep -w ID | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/ID//g') == "debian" ]]; then
-print_success "Setup nginx For OS Is $(cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/PRETTY_NAME//g')"
-apt -y install nginx
+if [[ $(cat /etc/os-release | grep -w ID | head -n1 | sed 's/=//g' | sed 's/\"//g' | sed 's/ID//g') == "ubuntu" ]]; then
+print_install "Setup nginx For OS Is $(cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/\"//g' | sed 's/PRETTY_NAME//g')"
+apt_install nginx
+elif [[ $(cat /etc/os-release | grep -w ID | head -n1 | sed 's/=//g' | sed 's/\"//g' | sed 's/ID//g') == "debian" ]]; then
+print_success "Setup nginx For OS Is $(cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/\"//g' | sed 's/PRETTY_NAME//g')"
+apt_install nginx
 else
-echo -e " Your OS Is Not Supported ( ${YELLOW}$(cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/PRETTY_NAME//g')${FONT} )"
+echo -e " Your OS Is Not Supported ( ${YELLOW}$(cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/\"//g' | sed 's/PRETTY_NAME//g')${FONT} )"
 fi
 }
+
 clear
 restart_system() {
 domainNOTIF=$(cat /etc/xray/domain)
@@ -245,6 +336,7 @@ TEXT="
 "'&reply_markup={"inline_keyboard":[[{"text":"ᴏʀᴅᴇʀ","url":"https://wa.me/nexusdev"},{"text":"Contact","url":"https://wa.me/nexusdev"}]]}'
 curl -s --max-time $TIMES -d "chat_id=$CHATID&disable_web_page_preview=1&text=$TEXT&parse_mode=html" $URL >/dev/null
 }
+
 auto_system() {
 cron_file="/etc/cron.d/auto_update"
 pekerjaan_cron="15 1 * * * root /usr/bin/auto_update"
@@ -257,6 +349,7 @@ if ! grep -Fq "$pekerjaan_cron" "$cron_file" 2>/dev/null; then
 echo "$pekerjaan_cron" > "$cron_file"
 fi
 }
+
 clear
 function pasang_ssl() {
 clear
@@ -267,17 +360,18 @@ domain=$(cat /root/domain)
 STOPWEBSERVER=$(lsof -i:80 | cut -d' ' -f1 | awk 'NR==2 {print $1}')
 rm -rf /root/.acme.sh
 mkdir /root/.acme.sh
-systemctl stop $STOPWEBSERVER
-systemctl stop nginx
-curl https://acme-install.netlify.app/acme.sh -o /root/.acme.sh/acme.sh
+run_quiet "Stop webserver..." systemctl stop $STOPWEBSERVER
+run_quiet "Stop nginx..." systemctl stop nginx
+run_quiet "Mengunduh acme.sh..." curl https://acme-install.netlify.app/acme.sh -o /root/.acme.sh/acme.sh
 chmod +x /root/.acme.sh/acme.sh
-/root/.acme.sh/acme.sh --upgrade --auto-upgrade
-/root/.acme.sh/acme.sh --set-default-ca --server letsencrypt
-/root/.acme.sh/acme.sh --issue -d $domain --standalone -k ec-256
-~/.acme.sh/acme.sh --installcert -d $domain --fullchainpath /etc/xray/xray.crt --keypath /etc/xray/xray.key --ecc
+run_quiet "Upgrade acme.sh..." /root/.acme.sh/acme.sh --upgrade --auto-upgrade
+run_quiet "Set default CA letsencrypt..." /root/.acme.sh/acme.sh --set-default-ca --server letsencrypt
+run_quiet "Issue SSL certificate..." /root/.acme.sh/acme.sh --issue -d $domain --standalone -k ec-256
+run_quiet "Install SSL certificate..." ~/.acme.sh/acme.sh --installcert -d $domain --fullchainpath /etc/xray/xray.crt --keypath /etc/xray/xray.key --ecc
 chmod 777 /etc/xray/xray.key
 print_success "SSL Certificate"
 }
+
 function make_folder_xray() {
 rm -rf /etc/vmess/.vmess.db
 rm -rf /etc/vless/.vless.db
@@ -318,25 +412,26 @@ echo "& plughin Account" >>/etc/trojan/.trojan.db
 echo "& plughin Account" >>/etc/shadowsocks/.shadowsocks.db
 echo "& plughin Account" >>/etc/ssh/.ssh.db
 }
+
 function install_xray() {
 clear
 print_install "Core Xray 1.8.24 Latest Version"
 domainSock_dir="/run/xray";! [ -d $domainSock_dir ] && mkdir  $domainSock_dir
 chown www-data.www-data $domainSock_dir
 latest_version="$(curl -s https://api.github.com/repos/XTLS/Xray-core/releases | grep tag_name | sed -E 's/.*"v(.*)".*/\1/' | head -n 1)"
-bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u www-data --version 1.8.24
-wget -O /etc/xray/config.json "${REPO}Cfg/config.json" >/dev/null 2>&1
-wget -O /etc/systemd/system/runn.service "${REPO}Fls/runn.service" >/dev/null 2>&1
+run_quiet "Menginstall Xray Core 1.8.24..." bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u www-data --version 1.8.24
+run_quiet "Mengunduh xray config.json..." wget -O /etc/xray/config.json "${REPO}Cfg/config.json"
+run_quiet "Mengunduh runn.service..." wget -O /etc/systemd/system/runn.service "${REPO}Fls/runn.service"
 domain=$(cat /etc/xray/domain)
 IPVS=$(cat /etc/xray/ipvps)
 print_success "Core Xray 1.8.1 Latest Version"
 clear
 print_install "Memasang Konfigurasi Packet"
-wget -O /etc/haproxy/haproxy.cfg "${REPO}Cfg/haproxy.cfg" >/dev/null 2>&1
-wget -O /etc/nginx/conf.d/xray.conf "${REPO}Cfg/xray.conf" >/dev/null 2>&1
+run_quiet "Mengunduh haproxy.cfg..." wget -O /etc/haproxy/haproxy.cfg "${REPO}Cfg/haproxy.cfg"
+run_quiet "Mengunduh xray.conf..." wget -O /etc/nginx/conf.d/xray.conf "${REPO}Cfg/xray.conf"
 sed -i "s/xxx/${domain}/g" /etc/haproxy/haproxy.cfg
 sed -i "s/xxx/${domain}/g" /etc/nginx/conf.d/xray.conf
-curl ${REPO}Cfg/nginx.conf > /etc/nginx/nginx.conf
+run_quiet "Mengunduh nginx.conf..." curl ${REPO}Cfg/nginx.conf > /etc/nginx/nginx.conf
 cat /etc/xray/xray.crt /etc/xray/xray.key | tee /etc/haproxy/hap.pem
 chmod +x /etc/systemd/system/runn.service
 rm -rf /etc/systemd/system/xray.service.d
@@ -359,10 +454,11 @@ WantedBy=multi-user.target
 EOF
 print_success "Konfigurasi Packet"
 }
+
 function ssh(){
 clear
 print_install "Memasang Password SSH"
-wget -O /etc/pam.d/common-password "${REPO}Fls/password"
+run_quiet "Mengunduh common-password..." wget -O /etc/pam.d/common-password "${REPO}Fls/password"
 chmod +x /etc/pam.d/common-password
 DEBIAN_FRONTEND=noninteractive dpkg-reconfigure keyboard-configuration
 debconf-set-selections <<<"keyboard-configuration keyboard-configuration/altgr select The default for the keyboard layout"
@@ -402,20 +498,21 @@ cat > /etc/rc.local <<-END
 exit 0
 END
 chmod +x /etc/rc.local
-systemctl enable rc-local
-systemctl start rc-local.service
+run_quiet "Enable rc-local..." systemctl enable rc-local
+run_quiet "Start rc-local..." systemctl start rc-local.service
 echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6
 sed -i '$ i\echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6' /etc/rc.local
 ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
 sed -i 's/AcceptEnv/#AcceptEnv/g' /etc/ssh/sshd_config
 print_success "Password SSH"
 }
+
 function udp_mini(){
 clear
 print_install "Memasang Service limit Quota"
-wget raw.githubusercontent.com/arivpnstores/v4/main/Fls/limit.sh && chmod +x limit.sh && ./limit.sh
+run_quiet "Mengunduh & install limit.sh..." bash -c "wget -q raw.githubusercontent.com/arivpnstores/v4/main/Fls/limit.sh && chmod +x limit.sh && bash limit.sh"
 cd
-wget -q -O /usr/bin/limit-ip "${REPO}Fls/limit-ip"
+run_quiet "Mengunduh limit-ip..." wget -q -O /usr/bin/limit-ip "${REPO}Fls/limit-ip"
 chmod +x /usr/bin/*
 cd /usr/bin
 sed -i 's/\r//' limit-ip
@@ -458,99 +555,96 @@ WantedBy=multi-user.target
 EOF
 systemctl daemon-reload
 mkdir -p /usr/local/kyt/
-wget -q -O /usr/local/kyt/udp-mini "${REPO}Fls/udp-mini"
+run_quiet "Mengunduh udp-mini..." wget -q -O /usr/local/kyt/udp-mini "${REPO}Fls/udp-mini"
 chmod +x /usr/local/kyt/udp-mini
-wget -q -O /etc/systemd/system/udp-mini-1.service "${REPO}Fls/udp-mini-1.service"
-wget -q -O /etc/systemd/system/udp-mini-2.service "${REPO}Fls/udp-mini-2.service"
-wget -q -O /etc/systemd/system/udp-mini-3.service "${REPO}Fls/udp-mini-3.service"
-systemctl disable udp-mini-1
-systemctl stop udp-mini-1
-systemctl enable udp-mini-1
-systemctl start udp-mini-1
-systemctl disable udp-mini-2
-systemctl stop udp-mini-2
-systemctl enable udp-mini-2
-systemctl start udp-mini-2
-systemctl disable udp-mini-3
-systemctl stop udp-mini-3
-systemctl enable udp-mini-3
-systemctl start udp-mini-3
+run_quiet "Mengunduh udp-mini-1.service..." wget -q -O /etc/systemd/system/udp-mini-1.service "${REPO}Fls/udp-mini-1.service"
+run_quiet "Mengunduh udp-mini-2.service..." wget -q -O /etc/systemd/system/udp-mini-2.service "${REPO}Fls/udp-mini-2.service"
+run_quiet "Mengunduh udp-mini-3.service..." wget -q -O /etc/systemd/system/udp-mini-3.service "${REPO}Fls/udp-mini-3.service"
+run_quiet "Enable udp-mini-1..." systemctl enable udp-mini-1
+run_quiet "Start udp-mini-1..." systemctl start udp-mini-1
+run_quiet "Enable udp-mini-2..." systemctl enable udp-mini-2
+run_quiet "Start udp-mini-2..." systemctl start udp-mini-2
+run_quiet "Enable udp-mini-3..." systemctl enable udp-mini-3
+run_quiet "Start udp-mini-3..." systemctl start udp-mini-3
 print_success "files Quota Service"
 }
+
 function ssh_slow(){
 clear
 print_install "Memasang modul SlowDNS Server"
-wget -q -O /tmp/nameserver "${REPO}Fls/nameserver" >/dev/null 2>&1
+run_quiet "Mengunduh nameserver..." wget -q -O /tmp/nameserver "${REPO}Fls/nameserver"
 chmod +x /tmp/nameserver
-bash /tmp/nameserver | tee /root/install.log
+run_quiet "Menginstall SlowDNS..." bash /tmp/nameserver
 clear
 print_success "SlowDNS"
 }
+
 clear
 function ins_SSHD(){
 clear
 print_install "Memasang SSHD"
-wget -q -O /etc/ssh/sshd_config "${REPO}Fls/sshd" >/dev/null 2>&1
+run_quiet "Mengunduh sshd_config..." wget -q -O /etc/ssh/sshd_config "${REPO}Fls/sshd"
 chmod 700 /etc/ssh/sshd_config
-/etc/init.d/ssh restart
-systemctl restart ssh
-/etc/init.d/ssh status
+run_quiet "Restart SSH..." /etc/init.d/ssh restart
+run_quiet "Restart SSH (systemctl)..." systemctl restart ssh
 print_success "SSHD"
 }
+
 clear
 function ins_dropbear(){
 clear
 print_install "Menginstall Dropbear"
-apt-get install dropbear -y > /dev/null 2>&1
-wget -q -O /etc/default/dropbear "${REPO}Cfg/dropbear.conf"
+apt_install dropbear
+run_quiet "Mengunduh dropbear.conf..." wget -q -O /etc/default/dropbear "${REPO}Cfg/dropbear.conf"
 chmod +x /etc/default/dropbear
-/etc/init.d/dropbear restart
-/etc/init.d/dropbear status
+run_quiet "Restart Dropbear..." /etc/init.d/dropbear restart
 print_success "Dropbear"
 }
+
 clear
 function ins_vnstat(){
 clear
 print_install "Menginstall Vnstat"
-apt -y install vnstat > /dev/null 2>&1
-/etc/init.d/vnstat restart
-apt -y install libsqlite3-dev > /dev/null 2>&1
-wget https://humdi.net/vnstat/vnstat-2.6.tar.gz
-tar zxvf vnstat-2.6.tar.gz
+apt_install vnstat
+run_quiet "Restart vnstat..." /etc/init.d/vnstat restart
+apt_install libsqlite3-dev
+run_quiet "Mengunduh vnstat-2.6.tar.gz..." wget -q https://humdi.net/vnstat/vnstat-2.6.tar.gz
+run_quiet "Ekstrak vnstat-2.6.tar.gz..." tar zxvf vnstat-2.6.tar.gz
 cd vnstat-2.6
-./configure --prefix=/usr --sysconfdir=/etc && make && make install
+run_quiet "Compile & install vnstat..." bash -c "./configure --prefix=/usr --sysconfdir=/etc && make && make install"
 cd
-vnstat -u -i $NET
-sed -i 's/Interface "'""eth0""'"/Interface "'""$NET""'"/g' /etc/vnstat.conf
+run_quiet "Init vnstat interface..." vnstat -u -i $NET
+sed -i 's/Interface "'"eth0"'"/Interface "'"$NET"'"/g' /etc/vnstat.conf
 chown vnstat:vnstat /var/lib/vnstat -R
-systemctl enable vnstat
-/etc/init.d/vnstat restart
-/etc/init.d/vnstat status
+run_quiet "Enable vnstat..." systemctl enable vnstat
+run_quiet "Restart vnstat..." /etc/init.d/vnstat restart
 rm -f /root/vnstat-2.6.tar.gz
 rm -rf /root/vnstat-2.6
 print_success "Vnstat"
 }
+
 function ins_openvpn(){
 clear
 print_install "Menginstall OpenVPN"
-wget ${REPO}Fls/openvpn &&  chmod +x openvpn && ./openvpn
-/etc/init.d/openvpn restart
+run_quiet "Mengunduh & install openvpn..." bash -c "wget -q ${REPO}Fls/openvpn && chmod +x openvpn && ./openvpn"
+run_quiet "Restart OpenVPN..." /etc/init.d/openvpn restart
 print_success "OpenVPN"
 }
+
 function ins_backup() {
 clear
 print_install "Memasang Backup Server"
-apt install rclone -y
-printf "q\n" | rclone config
-wget -O /root/.config/rclone/rclone.conf "${REPO}Cfg/rclone.conf"
+apt_install rclone
+run_quiet "Init rclone config..." printf "q\n" | rclone config
+run_quiet "Mengunduh rclone.conf..." wget -q -O /root/.config/rclone/rclone.conf "${REPO}Cfg/rclone.conf"
 cd /bin
-git clone https://github.com/arivpnstores/wondershaper.git
+run_quiet "Clone wondershaper..." git clone https://github.com/arivpnstores/wondershaper.git
 cd wondershaper
-sudo make install
+run_quiet "Install wondershaper..." make install
 cd
 rm -rf wondershaper
 echo > /home/files
-apt install msmtp-mta ca-certificates bsd-mailx -y
+apt_install msmtp-mta ca-certificates bsd-mailx
 cat <<EOF > /etc/msmtprc
 defaults
 tls on
@@ -566,29 +660,31 @@ password jokerman77
 logfile ~/.msmtp.log
 EOF
 chown -R www-data:www-data /etc/msmtprc
-wget -q -O /etc/ipserver "${REPO}Fls/ipserver" && bash /etc/ipserver
+run_quiet "Setup ipserver..." bash -c "wget -q -O /etc/ipserver '${REPO}Fls/ipserver' && bash /etc/ipserver"
 print_success "Backup Server"
 }
+
 clear
 function ins_swab(){
 clear
 print_install "Memasang Swap 2 GB"
 gotop_latest="$(curl -s https://api.github.com/repos/xxxserxxx/gotop/releases | grep tag_name | sed -E 's/.*"v(.*)".*/\1/' | head -n 1)"
 gotop_link="https://github.com/xxxserxxx/gotop/releases/download/v$gotop_latest/gotop_v"$gotop_latest"_linux_amd64.deb"
-curl -sL "$gotop_link" -o /tmp/gotop.deb
-dpkg -i /tmp/gotop.deb >/dev/null 2>&1
-dd if=/dev/zero of=/swapfile bs=1M count=2048
-mkswap /swapfile
+run_quiet "Mengunduh gotop.deb..." curl -sL "$gotop_link" -o /tmp/gotop.deb
+run_quiet "Install gotop..." dpkg -i /tmp/gotop.deb
+run_quiet "Membuat swapfile 2GB..." dd if=/dev/zero of=/swapfile bs=1M count=2048
+run_quiet "mkswap..." mkswap /swapfile
 chown root:root /swapfile
-chmod 0600 /swapfile >/dev/null 2>&1
-swapon /swapfile >/dev/null 2>&1
+chmod 0600 /swapfile
+run_quiet "swapon..." swapon /swapfile
 sed -i '$ i\/swapfile      swap swap   defaults    0 0' /etc/fstab
-chronyd -q 'server 0.id.pool.ntp.org iburst'
-chronyc sourcestats -v
-chronyc tracking -v
-wget ${REPO}Fls/bbr.sh &&  chmod +x bbr.sh && ./bbr.sh
+run_quiet "Sinkronisasi waktu chrony..." chronyd -q 'server 0.id.pool.ntp.org iburst'
+run_quiet "chronyc sourcestats..." chronyc sourcestats -v
+run_quiet "chronyc tracking..." chronyc tracking -v
+run_quiet "Setup BBR..." bash -c "wget -q ${REPO}Fls/bbr.sh && chmod +x bbr.sh && ./bbr.sh"
 print_success "Swap 2 GB"
 }
+
 function ins_Fail2ban() {
 clear
 print_install "Menginstall Fail2ban"
@@ -601,10 +697,9 @@ fi
 clear
 echo "Banner /etc/banner.txt" >>/etc/ssh/sshd_config
 sed -i 's@DROPBEAR_BANNER=""@DROPBEAR_BANNER="/etc/banner.txt"@g' /etc/default/dropbear
-wget -O /etc/banner.txt "${REPO}banner.txt"
-echo "Menginstal Fail2ban..."
-apt-get update
-apt-get install -y fail2ban
+run_quiet "Mengunduh banner.txt..." wget -q -O /etc/banner.txt "${REPO}banner.txt"
+apt_update
+apt_install fail2ban
 cat <<EOF > /etc/fail2ban/jail.local
 [DEFAULT]
 bantime = 3600
@@ -636,47 +731,49 @@ cat <<EOF > /etc/fail2ban/filter.d/http-get-dos.conf
 failregex = ^<HOST> -.*"(GET|POST).*
 ignoreregex =
 EOF
-systemctl restart fail2ban
-systemctl enable fail2ban
+run_quiet "Restart fail2ban..." systemctl restart fail2ban
+run_quiet "Enable fail2ban..." systemctl enable fail2ban
 }
+
 function ins_epro(){
 clear
 print_install "Menginstall ePro WebSocket Proxy"
-wget -O /usr/bin/ws "${REPO}Fls/ws" >/dev/null 2>&1
-wget -O /usr/bin/tun.conf "${REPO}Cfg/tun.conf" >/dev/null 2>&1
-wget -O /etc/systemd/system/ws.service "${REPO}Fls/ws.service" >/dev/null 2>&1
+run_quiet "Mengunduh ws..." wget -q -O /usr/bin/ws "${REPO}Fls/ws"
+run_quiet "Mengunduh tun.conf..." wget -q -O /usr/bin/tun.conf "${REPO}Cfg/tun.conf"
+run_quiet "Mengunduh ws.service..." wget -q -O /etc/systemd/system/ws.service "${REPO}Fls/ws.service"
 chmod +x /etc/systemd/system/ws.service
 chmod +x /usr/bin/ws
 chmod 644 /usr/bin/tun.conf
-systemctl disable ws
-systemctl stop ws
-systemctl enable ws
-systemctl start ws
-systemctl restart ws
-wget -q -O /usr/local/share/xray/geosite.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat" >/dev/null 2>&1
-wget -q -O /usr/local/share/xray/geoip.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat" >/dev/null 2>&1
-wget -O /usr/sbin/ftvpn "${REPO}Fls/ftvpn" >/dev/null 2>&1
+run_quiet "Enable ws..." systemctl enable ws
+run_quiet "Start ws..." systemctl start ws
+run_quiet "Restart ws..." systemctl restart ws
+run_quiet "Mengunduh geosite.dat..." wget -q -O /usr/local/share/xray/geosite.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat"
+run_quiet "Mengunduh geoip.dat..." wget -q -O /usr/local/share/xray/geoip.dat "https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat"
+run_quiet "Mengunduh ftvpn..." wget -q -O /usr/sbin/ftvpn "${REPO}Fls/ftvpn"
 chmod +x /usr/sbin/ftvpn
-iptables -A FORWARD -m string --string "get_peers" --algo bm -j DROP
-iptables -A FORWARD -m string --string "announce_peer" --algo bm -j DROP
-iptables -A FORWARD -m string --string "find_node" --algo bm -j DROP
-iptables -A FORWARD -m string --algo bm --string "BitTorrent" -j DROP
-iptables -A FORWARD -m string --algo bm --string "BitTorrent protocol" -j DROP
-iptables -A FORWARD -m string --algo bm --string "peer_id=" -j DROP
-iptables -A FORWARD -m string --algo bm --string ".torrent" -j DROP
-iptables -A FORWARD -m string --algo bm --string "announce.php?passkey=" -j DROP
-iptables -A FORWARD -m string --algo bm --string "torrent" -j DROP
-iptables -A FORWARD -m string --algo bm --string "announce" -j DROP
-iptables -A FORWARD -m string --algo bm --string "info_hash" -j DROP
+run_quiet "Setup iptables rules..." bash -c "
+iptables -A FORWARD -m string --string 'get_peers' --algo bm -j DROP
+iptables -A FORWARD -m string --string 'announce_peer' --algo bm -j DROP
+iptables -A FORWARD -m string --string 'find_node' --algo bm -j DROP
+iptables -A FORWARD -m string --algo bm --string 'BitTorrent' -j DROP
+iptables -A FORWARD -m string --algo bm --string 'BitTorrent protocol' -j DROP
+iptables -A FORWARD -m string --algo bm --string 'peer_id=' -j DROP
+iptables -A FORWARD -m string --algo bm --string '.torrent' -j DROP
+iptables -A FORWARD -m string --algo bm --string 'announce.php?passkey=' -j DROP
+iptables -A FORWARD -m string --algo bm --string 'torrent' -j DROP
+iptables -A FORWARD -m string --algo bm --string 'announce' -j DROP
+iptables -A FORWARD -m string --algo bm --string 'info_hash' -j DROP
 iptables-save > /etc/iptables.up.rules
 iptables-restore -t < /etc/iptables.up.rules
 netfilter-persistent save
 netfilter-persistent reload
+"
 cd
-apt autoclean -y >/dev/null 2>&1
-apt autoremove -y >/dev/null 2>&1
+run_quiet "apt autoclean..." apt-get autoclean -y
+run_quiet "apt autoremove..." apt-get autoremove -y
 print_success "ePro WebSocket Proxy"
 }
+
 clear
 function UDP-ZIVPN(){
 clear
@@ -695,23 +792,21 @@ chmod 644 "$IP_FILE" "$ISP_FILE"
 echo "================================="
 echo "IP  : $IP"
 echo "ISP : $ISP"
-echo "Saved:"
-echo " - $IP_FILE"
-echo " - $ISP_FILE"
 echo "================================="
 echo
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
-LIGHT_BLUE='\033[1;36m'  # biru muda terang
+LIGHT_BLUE='\033[1;36m'
 BOLD_WHITE='\033[1;37m'
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
 LIGHT_GREEN='\033[1;32m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 LICENSE_URL="https://raw.githubusercontent.com/AutoNV/udpzivpn/main/ip2"
 LICENSE_INFO_FILE="/etc/zivpn/.license_info"
 CONFIG_DIR="/etc/zivpn"
 TELEGRAM_CONF="${CONFIG_DIR}/telegram.conf"
+
 function verify_license() {
 echo "Verifying installation license..."
 local SERVER_IP
@@ -745,104 +840,76 @@ echo -e "${RED}Verifikasi Lisensi Gagal! Lisensi untuk IP ${SERVER_IP} telah ked
 exit 1
 fi
 echo -e "${LIGHT_GREEN}Verifikasi Lisensi Berhasil! Client: ${client_name}, IP: ${SERVER_IP}${NC}"
-sleep 2 # Brief pause to show the message
+sleep 2
 mkdir -p /etc/zivpn
 echo "CLIENT_NAME=${client_name}" > "$LICENSE_INFO_FILE"
 echo "EXPIRY_DATE=${expiry_date_str}" >> "$LICENSE_INFO_FILE"
 }
+
 function restart_zivpn() {
 systemctl restart zivpn.service --no-block
 }
+
 verify_license
 export DEBIAN_FRONTEND=noninteractive
-dpkg --configure -a || true
-apt -f install -y || true
-apt update
-apt install -y sudo screen ufw ruby rubygems figlet lolcat curl wget python3-pip jq curl sudo zip figlet lolcat vnstat cron
-gem install lolcat || true
+run_quiet "dpkg --configure -a..." dpkg --configure -a
+run_quiet "apt -f install..." apt-get install -f -y
+apt_update
+apt_install sudo screen ufw ruby rubygems figlet lolcat curl wget python3-pip jq curl sudo zip figlet lolcat vnstat cron
+gem_install lolcat
 echo iptables-persistent iptables-persistent/autosave_v4 boolean true | debconf-set-selections
 echo iptables-persistent iptables-persistent/autosave_v6 boolean true | debconf-set-selections
-sudo apt install iptables-persistent -y
-apt install -y iptables-persistent netfilter-persistent
-sudo netfilter-persistent save
-echo "1. Update OS dan install dependensi..."
-apt update
-apt install -y wget curl ca-certificates
-update-ca-certificates
-echo "2. Hentikan service lama (jika ada)..."
-systemctl stop zivpn 2>/dev/null
-echo "3. Hapus binary lama (jika ada)..."
+apt_install iptables-persistent
+apt_install iptables-persistent netfilter-persistent
+run_quiet "netfilter-persistent save..." netfilter-persistent save
+apt_update
+apt_install wget curl ca-certificates
+run_quiet "update-ca-certificates..." update-ca-certificates
+run_quiet "Stop zivpn (lama)..." systemctl stop zivpn 2>/dev/null
 rm -f /usr/local/bin/zivpn
-echo "4. Download skrip resmi ZiVPN..."
+
 ARCH=$(uname -m)
 case "$ARCH" in
-x86_64)
-FILE="zi.sh"      # amd64
-;;
-aarch64)
-FILE="zi2.sh"       # arm64
-;;
-armv7l|armhf)
-FILE="zi3.sh"       # arm32
-;;
-*)
-echo "❌ Arsitektur tidak didukung: $ARCH"
-exit 1
-;;
+x86_64) FILE="zi.sh" ;;
+aarch64) FILE="zi2.sh" ;;
+armv7l|armhf) FILE="zi3.sh" ;;
+*) echo "❌ Arsitektur tidak didukung: $ARCH"; exit 1 ;;
 esac
 echo "Terdeteksi arsitektur: $ARCH → pakai $FILE"
-wget -O /root/zi.sh "https://raw.githubusercontent.com/AutoNV/udpzivpn/main/$FILE"
-echo "5. Beri izin executable..."
+run_quiet "Mengunduh $FILE ZiVPN..." wget -q -O /root/zi.sh "https://raw.githubusercontent.com/AutoNV/udpzivpn/main/$FILE"
 chmod +x /root/zi.sh
-echo "6. Jalankan skrip instalasi ZiVPN..."
-sudo /root/zi.sh
-echo "7. Reload systemd dan start service..."
-systemctl daemon-reload
-systemctl start zivpn
-systemctl enable zivpn
-echo "8. Cek status service..."
-systemctl status zivpn --no-pager
-echo "✅ Instalasi selesai. Service ZiVPN harusnya aktif dan panel bisa mendeteksi."
-echo "─── Setting up Advanced Management ───"
+run_quiet "Menjalankan installer ZiVPN..." bash /root/zi.sh
+run_quiet "Reload systemd..." systemctl daemon-reload
+run_quiet "Start zivpn..." systemctl start zivpn
+run_quiet "Enable zivpn..." systemctl enable zivpn
+
 ACTIVE_INTERFACE=$(ip -o link show | awk -F': ' '{print $2}' | grep -E '^(eth|en|wlan)' | head -n 1)
 if [ -z "$ACTIVE_INTERFACE" ]; then
 echo "Tidak ada antarmuka jaringan yang aktif ditemukan."
 exit 1
 else
-echo "Menjalankan vnstat untuk antarmuka: $ACTIVE_INTERFACE"
-sudo vnstat -i $ACTIVE_INTERFACE
+run_quiet "Init vnstat interface $ACTIVE_INTERFACE..." vnstat -i $ACTIVE_INTERFACE
 fi
-echo "All dependencies are installed and up to date."
-echo "Configuring vnstat for bandwidth monitoring..."
+
 local net_interface
 net_interface=$(ip -o -4 route show to default | awk '{print $5}' | head -n 1)
 if [ -n "$net_interface" ]; then
-echo "Detected network interface: $net_interface"
-sleep 2
-systemctl stop vnstat
-vnstat -u -i "$net_interface" --force
-systemctl enable vnstat
-systemctl start vnstat
-echo "vnstat setup complete for interface $net_interface."
-else
-echo "Warning: Could not automatically detect network interface for vnstat."
+run_quiet "Stop vnstat..." systemctl stop vnstat
+run_quiet "Init vnstat $net_interface..." vnstat -u -i "$net_interface" --force
+run_quiet "Enable vnstat..." systemctl enable vnstat
+run_quiet "Start vnstat..." systemctl start vnstat
 fi
-echo "Downloading helper script..."
-wget -O /usr/local/bin/zivpn_helper.sh https://raw.githubusercontent.com/AutoNV/udpzivpn/main/zivpn_helper.sh
-if [ $? -ne 0 ]; then
-echo "Failed to download helper script. Aborting."
-exit 1
-fi
+
+run_quiet "Mengunduh zivpn_helper.sh..." wget -q -O /usr/local/bin/zivpn_helper.sh https://raw.githubusercontent.com/AutoNV/udpzivpn/main/zivpn_helper.sh
 chmod +x /usr/local/bin/zivpn_helper.sh
-echo "Clearing initial password(s) set during base installation..."
+
 jq '.auth.config = []' /etc/zivpn/config.json > /etc/zivpn/config.json.tmp && mv /etc/zivpn/config.json.tmp /etc/zivpn/config.json
 touch /etc/zivpn/users.db
 RANDOM_PASS="zivpn$(shuf -i 10000-99999 -n 1)"
 EXPIRY_DATE=$(date -d "+1 day" +%s)
-echo "Creating a temporary initial account..."
 echo "${RANDOM_PASS}:${EXPIRY_DATE}" >> /etc/zivpn/users.db
 jq --arg pass "$RANDOM_PASS" '.auth.config += [$pass]' /etc/zivpn/config.json > /etc/zivpn/config.json.tmp && mv /etc/zivpn/config.json.tmp /etc/zivpn/config.json
-echo "Setting up expiry check cron job..."
+
 cat <<'EOF' > /etc/zivpn/expire_check.sh
 DB_FILE="/etc/zivpn/users.db"
 CONFIG_FILE="/etc/zivpn/config.json"
@@ -854,7 +921,6 @@ if [ ! -f "$DB_FILE" ]; then exit 0; fi
 while IFS=':' read -r password expiry_date; do
 if [[ -z "$password" ]]; then continue; fi
 if [ "$expiry_date" -le "$CURRENT_DATE" ]; then
-echo "User '${password}' has expired. Deleting permanently."
 jq --arg pass "$password" 'del(.auth.config[] | select(. == $pass))' "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
 SERVICE_RESTART_NEEDED=true
 else
@@ -863,7 +929,6 @@ fi
 done < "$DB_FILE"
 mv "$TMP_DB_FILE" "$DB_FILE"
 if [ "$SERVICE_RESTART_NEEDED" = true ]; then
-echo "Restarting zivpn service due to user removal."
 systemctl restart zivpn.service
 fi
 exit 0
@@ -872,67 +937,43 @@ chmod +x /etc/zivpn/expire_check.sh
 CRON_JOB_EXPIRY="* * * * * /etc/zivpn/expire_check.sh # zivpn-expiry-check"
 (crontab -l 2>/dev/null | grep -v "# zivpn-expiry-check") | crontab -
 (crontab -l 2>/dev/null; echo "$CRON_JOB_EXPIRY") | crontab -
-echo "Setting up license check script and cron job..."
+
 cat <<'EOF' > /etc/zivpn/license_checker.sh
 LICENSE_URL="https://raw.githubusercontent.com/AutoNV/udpzivpn/main/ip2"
 LICENSE_INFO_FILE="/etc/zivpn/.license_info"
 EXPIRED_LOCK_FILE="/etc/zivpn/.expired"
 TELEGRAM_CONF="/etc/zivpn/telegram.conf"
 LOG_FILE="/var/log/zivpn_license.log"
-log() {
-echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
-}
+log() { echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"; }
 function get_host() {
 local CERT_CN
 CERT_CN=$(openssl x509 -in /etc/zivpn/zivpn.crt -noout -subject | sed -n 's/.*CN = \([^,]*\).*/\1/p' 2>/dev/null || echo "")
-if [ "$CERT_CN" == "zivpn" ] || [ -z "$CERT_CN" ]; then
-cat /etc/zivpn/ip.txt
-else
-echo "$CERT_CN"
-fi
+if [ "$CERT_CN" == "zivpn" ] || [ -z "$CERT_CN" ]; then cat /etc/zivpn/ip.txt; else echo "$CERT_CN"; fi
 }
-function get_isp() {
-cat /etc/zivpn/isp.txt
-}
+function get_isp() { cat /etc/zivpn/isp.txt; }
 send_telegram_message() {
 local message="$1"
-if [ ! -f "$TELEGRAM_CONF" ]; then
-log "Telegram config not found, skipping notification."
-return
-fi
+if [ ! -f "$TELEGRAM_CONF" ]; then log "Telegram config not found, skipping notification."; return; fi
 source "$TELEGRAM_CONF"
 if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
 local api_url="https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage"
 curl -s -X POST "$api_url" -d "chat_id=${TELEGRAM_CHAT_ID}" --data-urlencode "text=${message}" -d "parse_mode=Markdown" > /dev/null
-log "Simple telegram notification sent."
-else
-log "Telegram config found but token or chat ID is missing."
 fi
 }
 log "Starting license check..."
 SERVER_IP=$(cat /etc/zivpn/ip.txt)
-if [ -z "$SERVER_IP" ]; then
-log "Error: Failed to retrieve server IP. Exiting."
-exit 1
-fi
-if [ ! -f "$LICENSE_INFO_FILE" ]; then
-log "Error: Local license info file not found. Exiting."
-exit 1
-fi
-source "$LICENSE_INFO_FILE" # This loads CLIENT_NAME and EXPIRY_DATE
+if [ -z "$SERVER_IP" ]; then log "Error: Failed to retrieve server IP. Exiting."; exit 1; fi
+if [ ! -f "$LICENSE_INFO_FILE" ]; then log "Error: Local license info file not found. Exiting."; exit 1; fi
+source "$LICENSE_INFO_FILE"
 license_data=$(curl -s "$LICENSE_URL")
-if [ $? -ne 0 ] || [ -z "$license_data" ]; then
-log "Error: Failed to connect to license server. Exiting."
-exit 1
-fi
+if [ $? -ne 0 ] || [ -z "$license_data" ]; then log "Error: Failed to connect to license server. Exiting."; exit 1; fi
 license_entry=$(echo "$license_data" | grep -w "$SERVER_IP")
 if [ -z "$license_entry" ]; then
 if [ ! -f "$EXPIRED_LOCK_FILE" ]; then
 log "License for IP ${SERVER_IP} has been REVOKED."
 systemctl stop zivpn.service
 touch "$EXPIRED_LOCK_FILE"
-local MSG="Notifikasi Otomatis: Lisensi untuk Klien \`${CLIENT_NAME}\` dengan IP \`${SERVER_IP}\` telah dicabut (REVOKED). Layanan zivpn telah dihentikan."
-send_telegram_message "$MSG"
+send_telegram_message "Notifikasi Otomatis: Lisensi untuk Klien \`${CLIENT_NAME}\` dengan IP \`${SERVER_IP}\` telah dicabut (REVOKED). Layanan zivpn telah dihentikan."
 fi
 exit 0
 fi
@@ -952,24 +993,14 @@ if [ ! -f "$EXPIRED_LOCK_FILE" ]; then
 log "License for IP ${SERVER_IP} has EXPIRED."
 systemctl stop zivpn.service
 touch "$EXPIRED_LOCK_FILE"
-local host
-host=$(get_host)
-local isp
-isp=$(get_isp)
-log "Sending rich expiry notification via helper script..."
-/usr/local/bin/zivpn_helper.sh expiry-notification "$host" "$SERVER_IP" "$CLIENT_NAME" "$isp" "$EXPIRY_DATE"
+/usr/local/bin/zivpn_helper.sh expiry-notification "$(get_host)" "$SERVER_IP" "$CLIENT_NAME" "$(get_isp)" "$EXPIRY_DATE"
 fi
 else
 if [ -f "$EXPIRED_LOCK_FILE" ]; then
 log "License for IP ${SERVER_IP} has been RENEWED/ACTIVATED."
 rm "$EXPIRED_LOCK_FILE"
 systemctl start zivpn.service
-local host
-host=$(get_host)
-local isp
-isp=$(get_isp)
-log "Sending rich renewed notification via helper script..."
-/usr/local/bin/zivpn_helper.sh renewed-notification "$host" "$SERVER_IP" "$CLIENT_NAME" "$isp" "$expiry_timestamp_remote"
+/usr/local/bin/zivpn_helper.sh renewed-notification "$(get_host)" "$SERVER_IP" "$CLIENT_NAME" "$(get_isp)" "$expiry_timestamp_remote"
 else
 log "License is active and valid. No action needed."
 fi
@@ -982,13 +1013,10 @@ CRON_JOB_LICENSE="*/5 * * * * /etc/zivpn/license_checker.sh # zivpn-license-chec
 (crontab -l 2>/dev/null | grep -v "# zivpn-license-check") | crontab -
 (crontab -l 2>/dev/null; echo "$CRON_JOB_LICENSE") | crontab -
 restart_zivpn
-echo "─── Setting up REST API Service ───"
+
+# REST API setup
 if ! command -v node &> /dev/null; then
-echo "Node.js not found. Installing Node.js v18..."
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs
-else
-echo "Node.js is already installed."
+run_quiet "Menginstall Node.js v18..." bash -c "curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && apt-get install -y nodejs"
 fi
 mkdir -p /etc/zivpn/api
 cat <<'EOF' > /etc/zivpn/api/package.json
@@ -1054,8 +1082,7 @@ executeZivpnManager('trial_account', [exp], res);
 });
 app.listen(PORT, () => console.log('ZIVPN API server running on port ' + PORT));
 EOF
-echo "Installing API dependencies..."
-npm install --prefix /etc/zivpn/api
+run_quiet "Install npm dependencies ZiVPN API..." npm install --prefix /etc/zivpn/api
 cat <<'EOF' > /etc/systemd/system/zivpn-api.service
 [Unit]
 Description=ZIVPN REST API Service
@@ -1069,104 +1096,96 @@ Restart=on-failure
 [Install]
 WantedBy=multi-user.target
 EOF
-systemctl daemon-reload
-systemctl enable zivpn-api.service
-systemctl start zivpn-api.service
+run_quiet "Reload systemd..." systemctl daemon-reload
+run_quiet "Enable zivpn-api..." systemctl enable zivpn-api.service
+run_quiet "Start zivpn-api..." systemctl start zivpn-api.service
 if [ ! -f /etc/zivpn/api_auth.key ]; then
-echo "🔑 API Key belum tersedia."
-echo "Generating initial API key..."
 local initial_api_key
 initial_api_key=$(LC_ALL=C tr -dc 'a-zA-Z0-9' < /dev/urandom | head -c 6)
 echo "$initial_api_key" > /etc/zivpn/api_auth.key
 chmod 600 /etc/zivpn/api_auth.key
-echo "✔ API Key berhasil disimpan!"
 fi
-echo "Opening firewall port 5888 for API..."
 iptables -I INPUT -p tcp --dport 5888 -j ACCEPT
-echo "─── API Setup Complete ───"
-chmod +x /usr/local/bin/update-manager
-(crontab -l 2>/dev/null | grep -v "# zivpn-auto-update") | crontab -
-(crontab -l 2>/dev/null; \
-echo "0 4 * * * /usr/local/bin/update-manager # zivpn-auto-update") | crontab -
-echo "✅ Auto update scheduled every day at 04:00"
-(crontab -l 2>/dev/null | grep -v "# zivpn-auto-start") | crontab -
-(crontab -l 2>/dev/null; \
-echo "*/2 * * * * systemctl is-active --quiet zivpn || systemctl start zivpn # zivpn-auto-start") | crontab -
-echo "✅ ZIVPN watchdog enabled (auto start if OFF every 2 minutes)"
-echo "🔄 Updating ZiVPN Manager..."
-wget -q https://raw.githubusercontent.com/AutoNV/udpzivpn/main/install.sh \
--O /usr/local/bin/install.sh
+
+run_quiet "Download manager scripts..." bash -c "
+wget -q https://raw.githubusercontent.com/AutoNV/udpzivpn/main/install.sh -O /usr/local/bin/install.sh
 chmod +x /usr/local/bin/install.sh
-wget -q https://raw.githubusercontent.com/AutoNV/udpzivpn/main/zivpn-manager \
--O /usr/local/bin/zivpn-manager
+wget -q https://raw.githubusercontent.com/AutoNV/udpzivpn/main/zivpn-manager -O /usr/local/bin/zivpn-manager
 chmod +x /usr/local/bin/zivpn-manager
-wget -q https://raw.githubusercontent.com/AutoNV/udpzivpn/main/zivpn_helper.sh \
--O /usr/local/bin/zivpn_helper.sh
+wget -q https://raw.githubusercontent.com/AutoNV/udpzivpn/main/zivpn_helper.sh -O /usr/local/bin/zivpn_helper.sh
 chmod +x /usr/local/bin/zivpn_helper.sh
-wget -q https://raw.githubusercontent.com/AutoNV/udpzivpn/main/update.sh \
--O /usr/local/bin/update-manager
+wget -q https://raw.githubusercontent.com/AutoNV/udpzivpn/main/update.sh -O /usr/local/bin/update-manager
 chmod +x /usr/local/bin/update-manager
+"
+
+(crontab -l 2>/dev/null | grep -v "# zivpn-auto-update") | crontab -
+(crontab -l 2>/dev/null; echo "0 4 * * * /usr/local/bin/update-manager # zivpn-auto-update") | crontab -
+(crontab -l 2>/dev/null | grep -v "# zivpn-auto-start") | crontab -
+(crontab -l 2>/dev/null; echo "*/2 * * * * systemctl is-active --quiet zivpn || systemctl start zivpn # zivpn-auto-start") | crontab -
 echo "🎉 ZiVPN Installer completed successfully."
 }
+
 function UDP-CUSTOM(){
 clear
 print_install "Menginstall UDP-CUSTOM"
 cd
-wget -O udp.sh https://raw.githubusercontent.com/arivpnstores/v4/main/udp.sh
+run_quiet "Mengunduh udp.sh..." wget -q -O udp.sh https://raw.githubusercontent.com/arivpnstores/v4/main/udp.sh
 chmod +x udp.sh
-./udp.sh
+run_quiet "Menjalankan udp.sh..." bash udp.sh
 print_success "UDP-CUSTOM BY NEXUSDEV"
 }
+
 function NOOBZVPNS() {
 clear
 print_install "MEMASANG NOOBZVPNS"
-wget -q https://raw.githubusercontent.com/arivpnstores/v4/main/noobzvpn-install.sh -O noobzvpn-install.sh
+run_quiet "Mengunduh noobzvpn-install.sh..." wget -q https://raw.githubusercontent.com/arivpnstores/v4/main/noobzvpn-install.sh -O noobzvpn-install.sh
 chmod +x noobzvpn-install.sh
-bash noobzvpn-install.sh
-systemctl restart noobzvpns
+run_quiet "Menginstall NOOBZVPNS..." bash noobzvpn-install.sh
+run_quiet "Restart noobzvpns..." systemctl restart noobzvpns
 print_success "NOOBZVPNS BY NEXUSDEV"
 }
+
 function ins_restart(){
 clear
-print_install "Restarting  All Packet"
-/etc/init.d/nginx restart
-/etc/init.d/openvpn restart
-/etc/init.d/ssh restart
-/etc/init.d/dropbear restart
-/etc/init.d/fail2ban restart
-/etc/init.d/vnstat restart
-systemctl restart haproxy
-/etc/init.d/cron restart
-systemctl restart zivpn
-systemctl daemon-reload
-systemctl start netfilter-persistent
-systemctl enable --now nginx
-systemctl enable --now xray
-systemctl enable --now rc-local
-systemctl enable --now dropbear
-systemctl enable --now openvpn
-systemctl enable --now cron
-systemctl enable --now haproxy
-systemctl enable --now netfilter-persistent
-systemctl enable --now ws
-systemctl enable --now fail2ban
-systemctl enable --now udp-custom
-systemctl enable --NOW noobzvpns
+print_install "Restarting All Packet"
+run_quiet "Restart nginx..." /etc/init.d/nginx restart
+run_quiet "Restart openvpn..." /etc/init.d/openvpn restart
+run_quiet "Restart ssh..." /etc/init.d/ssh restart
+run_quiet "Restart dropbear..." /etc/init.d/dropbear restart
+run_quiet "Restart fail2ban..." /etc/init.d/fail2ban restart
+run_quiet "Restart vnstat..." /etc/init.d/vnstat restart
+run_quiet "Restart haproxy..." systemctl restart haproxy
+run_quiet "Restart cron..." /etc/init.d/cron restart
+run_quiet "Restart zivpn..." systemctl restart zivpn
+run_quiet "Daemon reload..." systemctl daemon-reload
+run_quiet "Start netfilter-persistent..." systemctl start netfilter-persistent
+run_quiet "Enable nginx..." systemctl enable --now nginx
+run_quiet "Enable xray..." systemctl enable --now xray
+run_quiet "Enable rc-local..." systemctl enable --now rc-local
+run_quiet "Enable dropbear..." systemctl enable --now dropbear
+run_quiet "Enable openvpn..." systemctl enable --now openvpn
+run_quiet "Enable cron..." systemctl enable --now cron
+run_quiet "Enable haproxy..." systemctl enable --now haproxy
+run_quiet "Enable netfilter-persistent..." systemctl enable --now netfilter-persistent
+run_quiet "Enable ws..." systemctl enable --now ws
+run_quiet "Enable fail2ban..." systemctl enable --now fail2ban
+run_quiet "Enable udp-custom..." systemctl enable --now udp-custom
+run_quiet "Enable noobzvpns..." systemctl enable --now noobzvpns
 history -c
 echo "unset HISTFILE" >> /etc/profile
 cd
-rm -f /root/openvpn
-rm -f /root/key.pem
-rm -f /root/cert.pem
+rm -f /root/openvpn /root/key.pem /root/cert.pem
 print_success "All Packet"
 }
+
 function menuv4(){
 clear
 print_install "Memasang Menu Packet"
-wget -O update.sh https://raw.githubusercontent.com/AutoNV/gh/main/update.sh
+run_quiet "Mengunduh update.sh..." wget -q -O update.sh https://raw.githubusercontent.com/AutoNV/gh/main/update.sh
 chmod +x update.sh
-bash update.sh
+run_quiet "Menjalankan update.sh..." bash update.sh
 }
+
 function profile(){
 clear
 cat <<EOF > /root/.profile
@@ -1238,7 +1257,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 END
 echo "*/1 * * * * root echo -n > /var/log/nginx/access.log" >/etc/cron.d/log.nginx
 echo "*/1 * * * * root echo -n > /var/log/xray/access.log" >>/etc/cron.d/log.xray
-service cron restart
+run_quiet "Restart cron..." service cron restart
 cat >/home/daily_reboot <<-END
 5
 END
@@ -1274,23 +1293,24 @@ TIME_DATE="AM"
 fi
 print_success "Menu Packet"
 }
+
 function enable_services(){
 clear
 print_install "Enable Service"
-systemctl daemon-reload
-systemctl start netfilter-persistent
-systemctl enable --now rc-local
-systemctl enable --now cron
-systemctl enable --now netfilter-persistent
-systemctl restart nginx
-systemctl restart xray
-systemctl restart cron
-systemctl restart haproxy
+run_quiet "Daemon reload..." systemctl daemon-reload
+run_quiet "Start netfilter-persistent..." systemctl start netfilter-persistent
+run_quiet "Enable rc-local..." systemctl enable --now rc-local
+run_quiet "Enable cron..." systemctl enable --now cron
+run_quiet "Enable netfilter-persistent..." systemctl enable --now netfilter-persistent
+run_quiet "Restart nginx..." systemctl restart nginx
+run_quiet "Restart xray..." systemctl restart xray
+run_quiet "Restart cron..." systemctl restart cron
+run_quiet "Restart haproxy..." systemctl restart haproxy
 print_success "Enable Service"
 clear
 }
 
-# ─── Progress Bar Animation ─────────────────────────────────────────────────
+# ─── Progress Bar Animation ───────────────────────────────────────────────────
 PROGRESS=0
 TOTAL_STEPS=20
 
@@ -1320,20 +1340,19 @@ show_progress() {
   [[ $pct -eq 100 ]] && echo -e "  \033[92;1m✔  INSTALASI SELESAI!\033[0m" && echo ""
 }
 
-# ─── Install API Function ────────────────────────────────────────────────────
+# ─── Install API Function ─────────────────────────────────────────────────────
 function install_api_service(){
 mkdir -p /etc/xray/api
 if ! command -v node &>/dev/null; then
-curl -fsSL https://deb.nodesource.com/setup_18.x | bash - >/dev/null 2>&1
-apt-get install -y nodejs >/dev/null 2>&1
+run_quiet "Menginstall Node.js v18..." bash -c "curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && apt-get install -y nodejs"
 fi
 if [[ ! -f /etc/ssh/api_auth.key ]] || [[ -z "$(cat /etc/ssh/api_auth.key 2>/dev/null)" ]]; then
 NEW_KEY=$(tr -dc 'a-z0-9' < /dev/urandom | head -c 12)
 echo "$NEW_KEY" > /etc/ssh/api_auth.key
 chmod 600 /etc/ssh/api_auth.key
 fi
-wget -q -O /etc/xray/api/api.js \
-  "https://raw.githubusercontent.com/AutoNV/gh/main/api/api.js" 2>/dev/null || true
+run_quiet "Mengunduh api.js NEXUSDEV..." wget -q -O /etc/xray/api/api.js \
+  "https://raw.githubusercontent.com/AutoNV/gh/main/api/api.js"
 cat > /etc/systemd/system/xray-api.service <<'EOF'
 [Unit]
 Description=NEXUSDEV REST API Service
@@ -1350,11 +1369,9 @@ StandardError=journal
 [Install]
 WantedBy=multi-user.target
 EOF
-# Patch nginx untuk /api/ proxy
 NGINX_CONF="/etc/nginx/conf.d/xray.conf"
 if [[ -f "$NGINX_CONF" ]] && ! grep -q "location /api/" "$NGINX_CONF" 2>/dev/null; then
 python3 - <<'PYEOF'
-import sys
 with open("/etc/nginx/conf.d/xray.conf", "r") as f:
     content = f.read()
 location_block = """
@@ -1383,11 +1400,11 @@ if last_brace != -1:
 PYEOF
 fi
 iptables -I INPUT -p tcp --dport 7979 -j ACCEPT 2>/dev/null || true
-systemctl daemon-reload
-systemctl enable xray-api.service >/dev/null 2>&1
-systemctl stop  xray-api.service  >/dev/null 2>&1
-systemctl start xray-api.service
-nginx -t >/dev/null 2>&1 && systemctl reload nginx 2>/dev/null || true
+run_quiet "Daemon reload..." systemctl daemon-reload
+run_quiet "Enable xray-api..." systemctl enable xray-api.service
+run_quiet "Stop xray-api..." systemctl stop xray-api.service
+run_quiet "Start xray-api..." systemctl start xray-api.service
+run_quiet "Reload nginx..." bash -c "nginx -t && systemctl reload nginx"
 }
 
 function instal(){
@@ -1459,19 +1476,15 @@ show_progress 20 "Menyelesaikan instalasi..."
 restart_system
 auto_system
 }
+
 instal
+
 echo ""
 iptables -t nat -A PREROUTING -i $(ip -4 route ls|grep default|grep -Po '(?<=dev )(\S+)'|head -1) -p udp --dport 6000:19999 -j DNAT --to-destination :5667
 netfilter-persistent save
 netfilter-persistent reload
 history -c
-rm -rf /root/install
-rm -rf /root/menu
-rm -rf /root/*.zip
-rm -rf /root/*.sh
-rm -rf /root/LICENSE
-rm -rf /root/README.md
-rm -rf /root/domain
+rm -f /root/install /root/menu /root/*.zip /root/*.sh /root/LICENSE /root/README.md /root/domain
 secs_to_human "$(($(date +%s) - ${start}))"
 sudo hostnamectl set-hostname $username
 DOMAIN_DONE=$(cat /etc/xray/domain 2>/dev/null || echo "yourdomain.com")
