@@ -465,7 +465,7 @@ button:hover{background:#2ea043}
 <body>
 <div class="card">
   <div class="logo">⚡</div>
-  <h1>NEXUSDEV API v1</h1>
+  <h1>NEXUSDEV API</h1>
   <p>Masukkan Auth Key untuk mengakses<br>dokumentasi API</p>
   <input type="password" id="key" placeholder="Auth Key..." onkeydown="if(event.key==='Enter')login()">
   <button onclick="login()">Masuk →</button>
@@ -703,7 +703,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
       <div class="logo-tx">NEXUS<span>DEV</span> <small>API</small></div>
     </div>
     <div class="hdr-r">
-      <span class="badge bl">● LIVE</span>
+      <span class="badge bl">● LIVE 1</span>
       <span class="badge bv">v4.1</span>
       <div class="key-pill">🔑 <span>${auth || 'not set'}</span></div>
     </div>
@@ -1067,7 +1067,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   <div class="ul">ENDPOINT</div>
   <div class="ub"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/rensh?auth=${auth}&amp;num=myuser&amp;exp=30</div>
   <div class="rl">RESPONSE</div>
-  <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"data"</span>: {<br>  <span class="k">"username"</span>: <span class="s">"myuser"</span>,<br>  <span class="k">"previous_expiry"</span>: <span class="s">"Mar 06, 2026"</span>,<br>  <span class="k">"days_added"</span>: <span class="n">30</span>,<br>  <span class="k">"expired"</span>: <span class="s">"2026-04-05"</span>,<br>  <span class="k">"new_expiry_display"</span>: <span class="s">"05 Apr, 2026"</span><br>}</div>
+  <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"data"</span>: {<br>  <span class="k">"username"</span>: <span class="s">"myuser"</span>,<br>  <span class="k">"previous_expiry"</span>: <span class="s">"2026-03-08"</span>,<br>  <span class="k">"days_added"</span>: <span class="n">2</span>,<br>  <span class="k">"expired"</span>: <span class="s">"2026-03-10"</span><br>}</div>
   <div class="try-sec"><div class="try-ttl">⚡ TRY IT</div>
     <div class="try-ins">
       <input class="ti" id="rsh-n" placeholder="username (num)">
@@ -1092,7 +1092,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   <div class="ul">ENDPOINT</div>
   <div class="ub"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/renws?auth=${auth}&amp;num=myuser&amp;exp=30</div>
   <div class="rl">RESPONSE</div>
-  <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"data"</span>: {<br>  <span class="k">"username"</span>: <span class="s">"gua12"</span>,<br>  <span class="k">"previous_expiry"</span>: <span class="s">"Mar 06, 2026"</span>,<br>  <span class="k">"days_added"</span>: <span class="n">1</span>,<br>  <span class="k">"expired"</span>: <span class="s">"2026-03-07"</span>,<br>  <span class="k">"main_updated"</span>: <span class="b">true</span>,<br>  <span class="k">"grpc_updated"</span>: <span class="b">false</span><br>}</div>
+  <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"data"</span>: {<br>  <span class="k">"username"</span>: <span class="s">"gua12"</span>,<br>  <span class="k">"previous_expiry"</span>: <span class="s">"2026-03-08"</span>,<br>  <span class="k">"days_added"</span>: <span class="n">2</span>,<br>  <span class="k">"expired"</span>: <span class="s">"2026-03-10"</span>,<br>  <span class="k">"main_updated"</span>: <span class="b">true</span>,<br>  <span class="k">"grpc_updated"</span>: <span class="b">false</span><br>}</div>
   <div class="try-sec"><div class="try-ttl">⚡ TRY IT</div>
     <div class="try-ins">
       <input class="ti" id="rws-n" placeholder="username (num)">
@@ -1117,7 +1117,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   <div class="ul">ENDPOINT</div>
   <div class="ub"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/renvl?auth=${auth}&amp;num=myuser&amp;exp=30</div>
   <div class="rl">RESPONSE</div>
-  <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"data"</span>: {<br>  <span class="k">"username"</span>: <span class="s">"gua12"</span>,<br>  <span class="k">"previous_expiry"</span>: <span class="s">"Mar 06, 2026"</span>,<br>  <span class="k">"days_added"</span>: <span class="n">1</span>,<br>  <span class="k">"expired"</span>: <span class="s">"2026-03-07"</span>,<br>  <span class="k">"main_updated"</span>: <span class="b">true</span>,<br>  <span class="k">"grpc_updated"</span>: <span class="b">false</span><br>}</div>
+  <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"data"</span>: {<br>  <span class="k">"username"</span>: <span class="s">"gua12"</span>,<br>  <span class="k">"previous_expiry"</span>: <span class="s">"2026-03-08"</span>,<br>  <span class="k">"days_added"</span>: <span class="n">2</span>,<br>  <span class="k">"expired"</span>: <span class="s">"2026-03-10"</span>,<br>  <span class="k">"main_updated"</span>: <span class="b">true</span>,<br>  <span class="k">"grpc_updated"</span>: <span class="b">false</span><br>}</div>
   <div class="try-sec"><div class="try-ttl">⚡ TRY IT</div>
     <div class="try-ins">
       <input class="ti" id="rvl-n" placeholder="username (num)">
@@ -1142,7 +1142,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   <div class="ul">ENDPOINT</div>
   <div class="ub"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/rentr?auth=${auth}&amp;num=myuser&amp;exp=30</div>
   <div class="rl">RESPONSE</div>
-  <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"data"</span>: {<br>  <span class="k">"username"</span>: <span class="s">"gua12"</span>,<br>  <span class="k">"previous_expiry"</span>: <span class="s">"Mar 06, 2026"</span>,<br>  <span class="k">"days_added"</span>: <span class="n">1</span>,<br>  <span class="k">"expired"</span>: <span class="s">"2026-03-07"</span>,<br>  <span class="k">"main_updated"</span>: <span class="b">true</span>,<br>  <span class="k">"grpc_updated"</span>: <span class="b">false</span><br>}</div>
+  <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"data"</span>: {<br>  <span class="k">"username"</span>: <span class="s">"gua12"</span>,<br>  <span class="k">"previous_expiry"</span>: <span class="s">"2026-03-08"</span>,<br>  <span class="k">"days_added"</span>: <span class="n">2</span>,<br>  <span class="k">"expired"</span>: <span class="s">"2026-03-10"</span>,<br>  <span class="k">"main_updated"</span>: <span class="b">true</span>,<br>  <span class="k">"grpc_updated"</span>: <span class="b">false</span><br>}</div>
   <div class="try-sec"><div class="try-ttl">⚡ TRY IT</div>
     <div class="try-ins">
       <input class="ti" id="rtr-n" placeholder="username (num)">
@@ -1309,31 +1309,31 @@ function handleRenewSSH(params, res) {
     if (!exists.ok)
       return sendJSON(res, 404, { status: 'error', message: `SSH account ${username} not found` });
 
-    // Read previous expiry from .ssh.db — line format: #ssh# USER PASS 0 LIMITIP DD Mon, YYYY
     const SSH_DB = '/etc/ssh/.ssh.db';
-    let prevExp = 'unknown';
-    try {
-      const dbLine = fs.readFileSync(SSH_DB, 'utf8').split('\n')
-        .find(l => l.startsWith(`#ssh# ${username} `)) || '';
-      const parts = dbLine.trim().split(/\s+/);
-      // parts: [#ssh#, user, pass, 0, limitip, DD, Mon,, YYYY]
-      prevExp = parts.slice(5).join(' ').replace(/,$/, '').trim() || 'unknown';
-    } catch {}
 
-    const newExpDate = calcNewExpiry('', days); // SSH always extends from today
+    // Get previous expiry from system (YYYY-MM-DD via chage)
+    const chageOut = execCmd(`chage -l "${username}" 2>/dev/null | grep "Account expires" | awk -F': ' '{print $2}'`);
+    let prevExp = 'unknown';
+    if (chageOut.ok && chageOut.out.trim() && chageOut.out.trim() !== 'never') {
+      // chage returns date like "Mar 08, 2026" — convert to YYYY-MM-DD
+      const d = new Date(chageOut.out.trim());
+      if (!isNaN(d.getTime())) prevExp = d.toISOString().split('T')[0];
+      else prevExp = chageOut.out.trim();
+    }
+
+    const newExpDate = calcNewExpiry('', days); // SSH: extend from today
     const newExpISO  = newExpDate.toISOString().split('T')[0];
-    const newExpStr  = formatDateShort(newExpDate);
+    const newExpStr  = formatDateShort(newExpDate); // for .ssh.db display field
 
     // Update system account
     execCmd(`usermod -e "${newExpISO}" "${username}" 2>/dev/null || true`);
     execCmd(`passwd -u "${username}" 2>/dev/null || true`);
 
-    // Update .ssh.db using fs (no shell sed with special chars)
+    // Update .ssh.db
     fileReplaceLines(SSH_DB,
       l => l.startsWith(`#ssh# ${username} `),
       l => {
         const p = l.trim().split(/\s+/);
-        // keep: #ssh# user pass 0 limitip — replace exp
         const keep = p.slice(0, 5).join(' ');
         return `${keep} ${newExpStr}`;
       }
@@ -1343,7 +1343,7 @@ function handleRenewSSH(params, res) {
 
     sendJSON(res, 200, {
       status: 'success',
-      data: { username, previous_expiry: prevExp, days_added: days, expired: newExpISO, new_expiry_display: newExpStr }
+      data: { username, previous_expiry: prevExp, days_added: days, expired: newExpISO }
     });
   } catch (e) {
     sendJSON(res, 500, { status: 'error', message: e.message });
@@ -1370,10 +1370,10 @@ function handleRenewVmess(params, res) {
     if (!curExpStr)
       return sendJSON(res, 404, { status: 'error', message: `VMess account ${username} not found` });
 
-    const prevExp   = formatDateShort(new Date(curExpStr + 'T00:00:00'));
+    // previous_expiry is already YYYY-MM-DD from config.json
+    const prevExp    = curExpStr;
     const newExpDate = calcNewExpiry(curExpStr, days);
     const newExpISO  = newExpDate.toISOString().split('T')[0];
-    const newExpStr  = formatDateShort(newExpDate);
 
     // Update config.json — replace ALL "### username YYYY-MM-DD" lines (ws + grpc)
     const cfgResult = fileReplaceLines(CFG_JSON,
@@ -1386,7 +1386,6 @@ function handleRenewVmess(params, res) {
       l => l.startsWith(`### ${username} `),
       l => {
         const p = l.trim().split(/\s+/);
-        // replace date (index 2), keep rest
         p[2] = newExpISO;
         return p.join(' ');
       }
@@ -1398,7 +1397,7 @@ function handleRenewVmess(params, res) {
       status: 'success',
       data: {
         username, previous_expiry: prevExp, days_added: days,
-        expired: newExpISO, new_expiry_display: newExpStr,
+        expired: newExpISO,
         main_updated: cfgResult.linesChanged > 0,
         grpc_updated: cfgResult.linesChanged > 1
       }
@@ -1428,10 +1427,9 @@ function handleRenewVless(params, res) {
     if (!curExpStr)
       return sendJSON(res, 404, { status: 'error', message: `VLess account ${username} not found` });
 
-    const prevExp    = formatDateShort(new Date(curExpStr + 'T00:00:00'));
+    const prevExp    = curExpStr;
     const newExpDate = calcNewExpiry(curExpStr, days);
     const newExpISO  = newExpDate.toISOString().split('T')[0];
-    const newExpStr  = formatDateShort(newExpDate);
 
     const cfgResult = fileReplaceLines(CFG_JSON,
       l => l.startsWith(`#& ${username} `),
@@ -1449,7 +1447,7 @@ function handleRenewVless(params, res) {
       status: 'success',
       data: {
         username, previous_expiry: prevExp, days_added: days,
-        expired: newExpISO, new_expiry_display: newExpStr,
+        expired: newExpISO,
         main_updated: cfgResult.linesChanged > 0,
         grpc_updated: cfgResult.linesChanged > 1
       }
@@ -1479,10 +1477,9 @@ function handleRenewTrojan(params, res) {
     if (!curExpStr)
       return sendJSON(res, 404, { status: 'error', message: `Trojan account ${username} not found` });
 
-    const prevExp    = formatDateShort(new Date(curExpStr + 'T00:00:00'));
+    const prevExp    = curExpStr;
     const newExpDate = calcNewExpiry(curExpStr, days);
     const newExpISO  = newExpDate.toISOString().split('T')[0];
-    const newExpStr  = formatDateShort(newExpDate);
 
     const cfgResult = fileReplaceLines(CFG_JSON,
       l => l.startsWith(`#! ${username} `),
@@ -1500,7 +1497,7 @@ function handleRenewTrojan(params, res) {
       status: 'success',
       data: {
         username, previous_expiry: prevExp, days_added: days,
-        expired: newExpISO, new_expiry_display: newExpStr,
+        expired: newExpISO,
         main_updated: cfgResult.linesChanged > 0,
         grpc_updated: cfgResult.linesChanged > 1
       }
