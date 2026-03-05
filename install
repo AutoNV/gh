@@ -36,64 +36,82 @@ echo -e "${green} =============================== ${FONT}"
 sleep 2
 fi
 }
+# ── Spinner / Loading animation ────────────────────────────────────────────────
+SPINNER_PID=""
+function start_spinner() {
+  local msg="${1:-Loading...}"
+  local spinstr='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+  tput civis 2>/dev/null
+  (
+    i=0
+    while true; do
+      c="${spinstr:$((i % ${#spinstr})):1}"
+      printf "\r  \033[96;1m%s\033[0m  \033[97m%s\033[0m   " "$c" "$msg"
+      sleep 0.08
+      ((i++))
+    done
+  ) &
+  SPINNER_PID=$!
+}
+function stop_spinner() {
+  local status="${1:-0}"
+  if [[ -n "$SPINNER_PID" ]]; then
+    kill "$SPINNER_PID" 2>/dev/null
+    wait "$SPINNER_PID" 2>/dev/null
+    SPINNER_PID=""
+  fi
+  tput cnorm 2>/dev/null
+  if [[ "$status" -eq 0 ]]; then
+    printf "\r  \033[92;1m✔\033[0m  %-55s\n" "${SPINNER_MSG:-Done}"
+  else
+    printf "\r  \033[91;1m✘\033[0m  %-55s\n" "${SPINNER_MSG:-Failed}"
+  fi
+}
+# Wrapper: run a command silently with spinner
+# Usage: run_loading "Label" command [args...]
+function run_loading() {
+  SPINNER_MSG="$1"
+  shift
+  start_spinner "$SPINNER_MSG"
+  "$@" >/tmp/install_log.txt 2>&1
+  local rc=$?
+  stop_spinner $rc
+  return $rc
+}
+# ───────────────────────────────────────────────────────────────────────────────
 clear
 . /etc/os-release
-if [[ "$ID" != "ubuntu" || "$VERSION_ID" != "20.04" ]]; then
-echo -e "\e[91m❌ OS saat ini ($PRETTY_NAME) bukan Ubuntu 20.04\e[0m"
-echo "➡️ Menjalankan reinstall otomatis ke Ubuntu 20.04..."
-apt update -y
-wget https://raw.githubusercontent.com/bin456789/reinstall/main/reinstall.sh -O /tmp/reinstall.sh
-chmod +x /tmp/reinstall.sh
-bash /tmp/reinstall.sh ubuntu 20.04
-reboot
+# ── Support all versions of Debian & Ubuntu ──────────────────────────────────
+if [[ "$ID" == "ubuntu" || "$ID" == "debian" ]]; then
+  echo -e "\e[92m✔️ Deteksi OS berhasil: $PRETTY_NAME\e[0m"
 else
-echo -e "\e[92m✔️ Deteksi OS berhasil: $PRETTY_NAME\e[0m"
+  echo -e "\e[91m❌ OS tidak didukung: $PRETTY_NAME\e[0m"
+  echo -e "\e[93m  Script ini hanya mendukung Debian & Ubuntu (semua versi)\e[0m"
+  exit 1
 fi
-apt-get update -y
-apt install -y wget curl
+# Detect OS version for conditional logic
+OS_ID="$ID"
+OS_VERSION_ID="$VERSION_ID"
+OS_MAJOR_VERSION=$(echo "$VERSION_ID" | cut -d. -f1)
+run_loading "Update daftar paket..." apt-get update -y
+run_loading "Install wget & curl..." apt-get install -y wget curl
 print_install "Menambakan Data Izin Akses Script"
 rm -rf fix-izin.sh
-wget -O fix-izin.sh https://raw.githubusercontent.com/AutoNV/gh/main/fix-izin.sh
+run_loading "Download fix-izin.sh..." wget -O fix-izin.sh https://raw.githubusercontent.com/AutoNV/gh/main/fix-izin.sh
 chmod +x fix-izin.sh
-./fix-izin.sh
+run_loading "Menjalankan fix-izin..." bash fix-izin.sh
 print_install "Menginstall Packet Yang Dibutuhkan"
 export DEBIAN_FRONTEND=noninteractive
 echo 'openssh-server openssh-server/keep-obsolete-conffile boolean true' | debconf-set-selections
-apt install -y
-apt upgrade -y
-apt update -y
-apt install iputils-ping -y
-apt install bzip2 -y
-apt install gzip -y
-apt install xz-utils -y
-apt install jq curl -y
-apt install wondershaper -y
-apt install lolcat -y
-gem install lolcat -y
-apt install at -y
-apt install zip pwgen openssl netcat socat cron bash-completion -y
-apt install figlet -y
-apt update -y
-apt upgrade -y
-apt dist-upgrade -y
-systemctl enable chronyd > /dev/null 2>&1
-systemctl restart chronyd > /dev/null 2>&1
-systemctl enable chrony > /dev/null 2>&1
-systemctl restart chrony > /dev/null 2>&1
-chronyc sourcestats -v > /dev/null 2>&1
-chronyc tracking -v > /dev/null 2>&1
-apt install ntpdate -y
-ntpdate pool.ntp.org
-apt install sudo -y
-sudo apt-get clean all
-sudo apt-get autoremove -y
-sudo apt-get install -y debconf-utils
-sudo apt-get remove --purge exim4 -y
-sudo apt-get remove --purge ufw firewalld -y
-sudo apt-get install -y --no-install-recommends software-properties-common
+run_loading "apt update & upgrade..." bash -c "apt-get update -y && apt-get upgrade -y && apt-get dist-upgrade -y"
+run_loading "Install utilitas dasar..." apt-get install -y iputils-ping bzip2 gzip xz-utils jq curl lolcat figlet at zip pwgen openssl netcat socat cron bash-completion wondershaper
+run_loading "gem install lolcat..." gem install lolcat -y
+run_loading "Setup chrony / NTP..." bash -c "systemctl enable chronyd 2>/dev/null; systemctl restart chronyd 2>/dev/null; systemctl enable chrony 2>/dev/null; systemctl restart chrony 2>/dev/null; chronyc sourcestats -v 2>/dev/null; chronyc tracking -v 2>/dev/null"
+run_loading "Sinkronisasi waktu NTP..." bash -c "apt-get install -y ntpdate && ntpdate pool.ntp.org"
+run_loading "Bersihkan paket tidak diperlukan..." bash -c "apt-get install -y sudo debconf-utils software-properties-common && apt-get clean && apt-get autoremove -y && apt-get remove --purge -y exim4 ufw firewalld 2>/dev/null; true"
 echo iptables-persistent iptables-persistent/autosave_v4 boolean true | debconf-set-selections
 echo iptables-persistent iptables-persistent/autosave_v6 boolean true | debconf-set-selections
-sudo apt-get install -y speedtest-cli vnstat libnss3-dev libnspr4-dev pkg-config libpam0g-dev libcap-ng-dev libcap-ng-utils libselinux1-dev libcurl4-nss-dev flex bison make libnss3-tools libevent-dev bc rsyslog dos2unix zlib1g-dev libssl-dev libsqlite3-dev sed dirmngr libxml-parser-perl build-essential gcc g++ python htop lsof tar wget curl ruby zip unzip p7zip-full python3-pip libc6 util-linux build-essential msmtp-mta ca-certificates bsd-mailx iptables iptables-persistent netfilter-persistent net-tools openssl ca-certificates gnupg gnupg2 ca-certificates lsb-release gcc shc make cmake git screen socat xz-utils apt-transport-https gnupg1 dnsutils cron bash-completion ntpdate chrony jq openvpn easy-rsa
+run_loading "Install semua dependensi (harap tunggu)..." apt-get install -y speedtest-cli vnstat libnss3-dev libnspr4-dev pkg-config libpam0g-dev libcap-ng-dev libcap-ng-utils libselinux1-dev libcurl4-nss-dev flex bison make libnss3-tools libevent-dev bc rsyslog dos2unix zlib1g-dev libssl-dev libsqlite3-dev sed dirmngr libxml-parser-perl build-essential gcc g++ python3 htop lsof tar wget curl ruby zip unzip p7zip-full python3-pip libc6 util-linux msmtp-mta ca-certificates bsd-mailx iptables iptables-persistent netfilter-persistent net-tools openssl gnupg gnupg2 lsb-release shc cmake git screen socat xz-utils apt-transport-https gnupg1 dnsutils cron bash-completion ntpdate chrony jq openvpn easy-rsa
 clear
 echo -e ""
 if [[ $( uname -m | awk '{print $1}' ) == "x86_64" ]]; then
@@ -172,24 +190,25 @@ timedatectl set-timezone Asia/Jakarta
 echo iptables-persistent iptables-persistent/autosave_v4 boolean true | debconf-set-selections
 echo iptables-persistent iptables-persistent/autosave_v6 boolean true | debconf-set-selections
 print_success "Directory Xray"
-if [[ $(cat /etc/os-release | grep -w ID | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/ID//g') == "ubuntu" ]]; then
-echo "Setup Dependencies $(cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/PRETTY_NAME//g')"
+. /etc/os-release
+echo "Setup Dependencies for $PRETTY_NAME"
 sudo apt update -y
-apt-get install --no-install-recommends software-properties-common
-add-apt-repository ppa:vbernat/haproxy-2.0 -y
-apt-get -y install haproxy=2.0.\*
-elif [[ $(cat /etc/os-release | grep -w ID | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/ID//g') == "debian" ]]; then
-echo "Setup Dependencies For OS Is $(cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/PRETTY_NAME//g')"
-curl https://haproxy.debian.net/bernat.debian.org.gpg |
-gpg --dearmor >/usr/share/keyrings/haproxy.debian.net.gpg
-echo deb "[signed-by=/usr/share/keyrings/haproxy.debian.net.gpg]" \
-http://haproxy.debian.net buster-backports-1.8 main \
->/etc/apt/sources.list.d/haproxy.list
-sudo apt-get update
-apt-get -y install haproxy=1.8.\*
+if [[ "$ID" == "ubuntu" ]]; then
+  # Ubuntu: use official haproxy PPA (supports all Ubuntu versions)
+  apt-get install -y --no-install-recommends software-properties-common
+  add-apt-repository ppa:vbernat/haproxy-2.8 -y
+  apt-get update -y
+  apt-get -y install haproxy
+elif [[ "$ID" == "debian" ]]; then
+  # Debian: use haproxy.debian.net repo, auto-detect codename
+  CODENAME=$(lsb_release -sc 2>/dev/null || echo "$VERSION_CODENAME")
+  curl -fsSL https://haproxy.debian.net/bernat.debian.org.gpg     | gpg --dearmor -o /usr/share/keyrings/haproxy.debian.net.gpg
+  echo "deb [signed-by=/usr/share/keyrings/haproxy.debian.net.gpg] http://haproxy.debian.net ${CODENAME}-backports-2.8 main"     > /etc/apt/sources.list.d/haproxy.list
+  sudo apt-get update -y
+  apt-get -y install haproxy
 else
-echo -e " Your OS Is Not Supported ($(cat /etc/os-release | grep -w PRETTY_NAME | head -n1 | sed 's/=//g' | sed 's/"//g' | sed 's/PRETTY_NAME//g') )"
-exit 1
+  echo -e " Your OS Is Not Supported ($PRETTY_NAME)"
+  exit 1
 fi
 }
 clear
