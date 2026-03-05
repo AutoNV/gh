@@ -676,7 +676,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="stat s2"><div class="stat-num">2</div><div class="stat-lbl">VMESS ENDPOINTS</div></div>
   <div class="stat s3"><div class="stat-num">2</div><div class="stat-lbl">VLESS ENDPOINTS</div></div>
   <div class="stat s4"><div class="stat-num">2</div><div class="stat-lbl">TROJAN ENDPOINTS</div></div>
-  <div class="stat s5"><div class="stat-num">4</div><div class="stat-lbl">DELETE ENDPOINTS</div></div>
+  <div class="stat s5"><div class="stat-num">8</div><div class="stat-lbl">DELETE ENDPOINTS</div></div>
 </div>
 
 <!-- Tabs -->
@@ -933,10 +933,11 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <div id="grp-del">
 <div class="sh"><div class="sh-dot" style="background:var(--del)"></div><span class="sh-label">DELETE ACCOUNTS</span><div class="sh-line"></div></div>
 
+<!-- ── SSH Delete ── -->
 <div class="ep">
   <div class="ep-hd" onclick="tog(this)">
     <span class="mth del-mth">GET</span>
-    <span class="pth">/api/delete-ssh <span class="pm">?user=</span></span>
+    <span class="pth">/api/delssh &nbsp;<span class="pm" style="color:var(--muted);font-size:.72rem">alias: /api/delete-ssh</span> <span class="pm">?username=</span></span>
     <span class="dsc">Hapus akun SSH</span>
     <div class="tags"><span class="tag t-del">DELETE</span><span class="tag t-ssh">SSH</span></div>
     <span class="chevron">▼</span>
@@ -944,26 +945,29 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="ep-bd">
     <table class="ptbl"><tr><th>Parameter</th><th>Status</th><th>Keterangan</th></tr>
     <tr><td>auth</td><td><span class="req">WAJIB</span></td><td>API auth key</td></tr>
-    <tr><td>user</td><td><span class="req">WAJIB</span></td><td>Username yang akan dihapus</td></tr></table>
-    <div class="url-label">ENDPOINT URL</div>
-    <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/delete-ssh?auth=${auth}&amp;user=myuser</div>
+    <tr><td>username</td><td><span class="req">WAJIB</span></td><td>Username akun SSH yang dihapus</td></tr></table>
+    <div class="url-label">ENDPOINT URL (SHORT)</div>
+    <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/delssh?auth=${auth}&amp;username=myuser</div>
+    <div class="url-label">ENDPOINT URL (LONG)</div>
+    <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/delete-ssh?auth=${auth}&amp;username=myuser</div>
     <div class="rb-label">RESPONSE</div>
-    <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"message"</span>: <span class="s">"User SSH myuser berhasil dihapus"</span>,<br><span class="k">"user"</span>: <span class="s">"myuser"</span></div>
+    <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"message"</span>: <span class="s">"SSH account myuser deleted successfully"</span></div>
     <div class="try-section">
       <div class="try-title">⚡ TRY IT</div>
       <div class="try-inputs">
         <input class="try-input" id="ds-user" placeholder="username">
-        <button class="try-run" style="background:linear-gradient(135deg,#ef4444,#b91c1c)" onclick="tryApi(\`${baseUrl}/api/delete-ssh?auth=${auth}&user=\${gi('ds-user')}\`,this,'out-del-ssh')">Hapus →</button>
+        <button class="try-run" style="background:linear-gradient(135deg,#ef4444,#b91c1c)" onclick="tryApi(\`${baseUrl}/api/delssh?auth=${auth}&username=\${gi('ds-user')}\`,this,'out-del-ssh')">Delete →</button>
       </div>
       <div class="try-out" id="out-del-ssh"></div>
     </div>
   </div>
 </div>
 
+<!-- ── VMess Delete ── -->
 <div class="ep">
   <div class="ep-hd" onclick="tog(this)">
     <span class="mth del-mth">GET</span>
-    <span class="pth">/api/delete-vmess <span class="pm">?user=</span></span>
+    <span class="pth">/api/delws &nbsp;<span class="pm" style="color:var(--muted);font-size:.72rem">alias: /api/delete-vmess</span> <span class="pm">?username=</span></span>
     <span class="dsc">Hapus akun VMess</span>
     <div class="tags"><span class="tag t-del">DELETE</span><span class="tag t-vmess">VMESS</span></div>
     <span class="chevron">▼</span>
@@ -971,26 +975,29 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="ep-bd">
     <table class="ptbl"><tr><th>Parameter</th><th>Status</th><th>Keterangan</th></tr>
     <tr><td>auth</td><td><span class="req">WAJIB</span></td><td>API auth key</td></tr>
-    <tr><td>user</td><td><span class="req">WAJIB</span></td><td>Username yang akan dihapus</td></tr></table>
-    <div class="url-label">ENDPOINT URL</div>
-    <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/delete-vmess?auth=${auth}&amp;user=myuser</div>
+    <tr><td>username</td><td><span class="req">WAJIB</span></td><td>Username akun VMess yang dihapus</td></tr></table>
+    <div class="url-label">ENDPOINT URL (SHORT)</div>
+    <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/delws?auth=${auth}&amp;username=myuser</div>
+    <div class="url-label">ENDPOINT URL (LONG)</div>
+    <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/delete-vmess?auth=${auth}&amp;username=myuser</div>
     <div class="rb-label">RESPONSE</div>
-    <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"message"</span>: <span class="s">"User VMess myuser berhasil dihapus"</span></div>
+    <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"message"</span>: <span class="s">"VMess account myuser deleted successfully"</span></div>
     <div class="try-section">
       <div class="try-title">⚡ TRY IT</div>
       <div class="try-inputs">
         <input class="try-input" id="dv-user" placeholder="username">
-        <button class="try-run" style="background:linear-gradient(135deg,#ef4444,#b91c1c)" onclick="tryApi(\`${baseUrl}/api/delete-vmess?auth=${auth}&user=\${gi('dv-user')}\`,this,'out-del-vmess')">Hapus →</button>
+        <button class="try-run" style="background:linear-gradient(135deg,#ef4444,#b91c1c)" onclick="tryApi(\`${baseUrl}/api/delws?auth=${auth}&username=\${gi('dv-user')}\`,this,'out-del-vmess')">Delete →</button>
       </div>
       <div class="try-out" id="out-del-vmess"></div>
     </div>
   </div>
 </div>
 
+<!-- ── VLess Delete ── -->
 <div class="ep">
   <div class="ep-hd" onclick="tog(this)">
     <span class="mth del-mth">GET</span>
-    <span class="pth">/api/delete-vless <span class="pm">?user=</span></span>
+    <span class="pth">/api/delvl &nbsp;<span class="pm" style="color:var(--muted);font-size:.72rem">alias: /api/delete-vless</span> <span class="pm">?username=</span></span>
     <span class="dsc">Hapus akun VLess</span>
     <div class="tags"><span class="tag t-del">DELETE</span><span class="tag t-vless">VLESS</span></div>
     <span class="chevron">▼</span>
@@ -998,26 +1005,29 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="ep-bd">
     <table class="ptbl"><tr><th>Parameter</th><th>Status</th><th>Keterangan</th></tr>
     <tr><td>auth</td><td><span class="req">WAJIB</span></td><td>API auth key</td></tr>
-    <tr><td>user</td><td><span class="req">WAJIB</span></td><td>Username yang akan dihapus</td></tr></table>
-    <div class="url-label">ENDPOINT URL</div>
-    <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/delete-vless?auth=${auth}&amp;user=myuser</div>
+    <tr><td>username</td><td><span class="req">WAJIB</span></td><td>Username akun VLess yang dihapus</td></tr></table>
+    <div class="url-label">ENDPOINT URL (SHORT)</div>
+    <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/delvl?auth=${auth}&amp;username=myuser</div>
+    <div class="url-label">ENDPOINT URL (LONG)</div>
+    <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/delete-vless?auth=${auth}&amp;username=myuser</div>
     <div class="rb-label">RESPONSE</div>
-    <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"message"</span>: <span class="s">"User VLess myuser berhasil dihapus"</span></div>
+    <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"message"</span>: <span class="s">"VLess account myuser deleted successfully"</span></div>
     <div class="try-section">
       <div class="try-title">⚡ TRY IT</div>
       <div class="try-inputs">
         <input class="try-input" id="dvl-user" placeholder="username">
-        <button class="try-run" style="background:linear-gradient(135deg,#ef4444,#b91c1c)" onclick="tryApi(\`${baseUrl}/api/delete-vless?auth=${auth}&user=\${gi('dvl-user')}\`,this,'out-del-vless')">Hapus →</button>
+        <button class="try-run" style="background:linear-gradient(135deg,#ef4444,#b91c1c)" onclick="tryApi(\`${baseUrl}/api/delvl?auth=${auth}&username=\${gi('dvl-user')}\`,this,'out-del-vless')">Delete →</button>
       </div>
       <div class="try-out" id="out-del-vless"></div>
     </div>
   </div>
 </div>
 
+<!-- ── Trojan Delete ── -->
 <div class="ep">
   <div class="ep-hd" onclick="tog(this)">
     <span class="mth del-mth">GET</span>
-    <span class="pth">/api/delete-trojan <span class="pm">?user=</span></span>
+    <span class="pth">/api/deltr &nbsp;<span class="pm" style="color:var(--muted);font-size:.72rem">alias: /api/delete-trojan</span> <span class="pm">?username=</span></span>
     <span class="dsc">Hapus akun Trojan</span>
     <div class="tags"><span class="tag t-del">DELETE</span><span class="tag t-trojan">TROJAN</span></div>
     <span class="chevron">▼</span>
@@ -1025,16 +1035,18 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
   <div class="ep-bd">
     <table class="ptbl"><tr><th>Parameter</th><th>Status</th><th>Keterangan</th></tr>
     <tr><td>auth</td><td><span class="req">WAJIB</span></td><td>API auth key</td></tr>
-    <tr><td>user</td><td><span class="req">WAJIB</span></td><td>Username yang akan dihapus</td></tr></table>
-    <div class="url-label">ENDPOINT URL</div>
-    <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/delete-trojan?auth=${auth}&amp;user=myuser</div>
+    <tr><td>username</td><td><span class="req">WAJIB</span></td><td>Username akun Trojan yang dihapus</td></tr></table>
+    <div class="url-label">ENDPOINT URL (SHORT)</div>
+    <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/deltr?auth=${auth}&amp;username=myuser</div>
+    <div class="url-label">ENDPOINT URL (LONG)</div>
+    <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/delete-trojan?auth=${auth}&amp;username=myuser</div>
     <div class="rb-label">RESPONSE</div>
-    <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"message"</span>: <span class="s">"User Trojan myuser berhasil dihapus"</span></div>
+    <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"message"</span>: <span class="s">"Trojan account myuser deleted successfully"</span></div>
     <div class="try-section">
       <div class="try-title">⚡ TRY IT</div>
       <div class="try-inputs">
         <input class="try-input" id="dt-user" placeholder="username">
-        <button class="try-run" style="background:linear-gradient(135deg,#ef4444,#b91c1c)" onclick="tryApi(\`${baseUrl}/api/delete-trojan?auth=${auth}&user=\${gi('dt-user')}\`,this,'out-del-trojan')">Hapus →</button>
+        <button class="try-run" style="background:linear-gradient(135deg,#ef4444,#b91c1c)" onclick="tryApi(\`${baseUrl}/api/deltr?auth=${auth}&username=\${gi('dt-user')}\`,this,'out-del-trojan')">Delete →</button>
       </div>
       <div class="try-out" id="out-del-trojan"></div>
     </div>
@@ -1047,7 +1059,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 </div><!-- end grp-ssh -->
 </div><!-- end tab-all -->
 
-<div class="ftr">⚡ NEXUSDEV API · HTTPS via Nginx · <a href="https://t.me/nexusdev">@nexusdev</a></div>
+<div class="ftr">⚡ NEXUSDEV API · HTTPS via Nginx · <a href="https://t.me/nexusdev">@nexusweb_dev</a></div>
 </div>
 
 <script>
@@ -1104,58 +1116,58 @@ function showTab(name,el){
 
 // ─── Delete SSH ───────────────────────────────────────────────────────────────
 function handleDeleteSSH(params, res) {
-  const { user } = params;
-  if (!user) return sendJSON(res, 400, { status:'error', message:'Required: user' });
-  const exists = execCmd(`id "${user}" 2>/dev/null`);
-  if (!exists.ok) return sendJSON(res, 404, { status:'error', message:`User ${user} tidak ditemukan` });
-  execCmd(`userdel -f "${user}" 2>/dev/null || true`);
-  execCmd(`sed -i '/^${user}:/d' /etc/group 2>/dev/null || true`);
-  execCmd(`grep -wE "^#ssh# ${user}" /etc/ssh/.ssh.db | awk '{print $1" "$2" "$3}' | sort | uniq | tail -1 >> /etc/xray/.userall.db 2>/dev/null || true`);
-  execCmd(`sed -i "/^#ssh# ${user}/d" /etc/ssh/.ssh.db 2>/dev/null || true`);
-  execCmd(`rm -f /etc/ssh/${user} /etc/kyt/limit/ssh/ip/${user} /var/www/html/ssh-${user}.txt`);
-  sendJSON(res, 200, { status:'success', message:`User SSH ${user} berhasil dihapus`, user });
+  const username = params.username || params.user;
+  if (!username) return sendJSON(res, 400, { status:'error', message:'Required: username' });
+  const exists = execCmd(`id "${username}" 2>/dev/null`);
+  if (!exists.ok) return sendJSON(res, 404, { status:'error', message:`SSH account ${username} not found` });
+  execCmd(`userdel -f "${username}" 2>/dev/null || true`);
+  execCmd(`sed -i '/^${username}:/d' /etc/group 2>/dev/null || true`);
+  execCmd(`grep -wE "^#ssh# ${username}" /etc/ssh/.ssh.db | awk '{print $1" "$2" "$3}' | sort | uniq | tail -1 >> /etc/xray/.userall.db 2>/dev/null || true`);
+  execCmd(`sed -i "/^#ssh# ${username}/d" /etc/ssh/.ssh.db 2>/dev/null || true`);
+  execCmd(`rm -f /etc/ssh/${username} /etc/kyt/limit/ssh/ip/${username} /var/www/html/ssh-${username}.txt`);
+  sendJSON(res, 200, { status:'success', message:`SSH account ${username} deleted successfully` });
 }
 
 // ─── Delete VMess ─────────────────────────────────────────────────────────────
 function handleDeleteVmess(params, res) {
-  const { user } = params;
-  if (!user) return sendJSON(res, 400, { status:'error', message:'Required: user' });
-  const inDb = execCmd(`grep -w "^### ${user} " /etc/vmess/.vmess.db 2>/dev/null`);
-  if (!inDb.out.trim()) return sendJSON(res, 404, { status:'error', message:`User VMess ${user} tidak ditemukan` });
-  execCmd(`sed -i "/### ${user} /d" /etc/xray/config.json 2>/dev/null || true`);
-  execCmd(`sed -i "/{.*\\"email\\".*\\"${user}\\".*/d" /etc/xray/config.json 2>/dev/null || true`);
-  execCmd(`sed -i "/^### ${user}/d" /etc/vmess/.vmess.db 2>/dev/null || true`);
-  execCmd(`rm -f /etc/vmess/${user} /etc/kyt/limit/vmess/ip/${user} /var/www/html/vmess-${user}.txt`);
+  const username = params.username || params.user;
+  if (!username) return sendJSON(res, 400, { status:'error', message:'Required: username' });
+  const inDb = execCmd(`grep -w "^### ${username} " /etc/vmess/.vmess.db 2>/dev/null`);
+  if (!inDb.out.trim()) return sendJSON(res, 404, { status:'error', message:`VMess account ${username} not found` });
+  execCmd(`sed -i "/### ${username} /d" /etc/xray/config.json 2>/dev/null || true`);
+  execCmd(`sed -i "/{.*\\"email\\".*\\"${username}\\".*/d" /etc/xray/config.json 2>/dev/null || true`);
+  execCmd(`sed -i "/^### ${username}/d" /etc/vmess/.vmess.db 2>/dev/null || true`);
+  execCmd(`rm -f /etc/vmess/${username} /etc/kyt/limit/vmess/ip/${username} /var/www/html/vmess-${username}.txt`);
   execCmd(`systemctl restart xray 2>/dev/null || true`);
-  sendJSON(res, 200, { status:'success', message:`User VMess ${user} berhasil dihapus`, user });
+  sendJSON(res, 200, { status:'success', message:`VMess account ${username} deleted successfully` });
 }
 
 // ─── Delete VLess ─────────────────────────────────────────────────────────────
 function handleDeleteVless(params, res) {
-  const { user } = params;
-  if (!user) return sendJSON(res, 400, { status:'error', message:'Required: user' });
-  const inDb = execCmd(`grep -w "^#& ${user} " /etc/vless/.vless.db 2>/dev/null`);
-  if (!inDb.out.trim()) return sendJSON(res, 404, { status:'error', message:`User VLess ${user} tidak ditemukan` });
-  execCmd(`sed -i "/#& ${user} /d" /etc/xray/config.json 2>/dev/null || true`);
-  execCmd(`sed -i "/{.*\\"email\\".*\\"${user}\\".*/d" /etc/xray/config.json 2>/dev/null || true`);
-  execCmd(`sed -i "/^#& ${user}/d" /etc/vless/.vless.db 2>/dev/null || true`);
-  execCmd(`rm -f /etc/vless/${user} /etc/kyt/limit/vless/ip/${user} /var/www/html/vless-${user}.txt`);
+  const username = params.username || params.user;
+  if (!username) return sendJSON(res, 400, { status:'error', message:'Required: username' });
+  const inDb = execCmd(`grep -w "^#& ${username} " /etc/vless/.vless.db 2>/dev/null`);
+  if (!inDb.out.trim()) return sendJSON(res, 404, { status:'error', message:`VLess account ${username} not found` });
+  execCmd(`sed -i "/#& ${username} /d" /etc/xray/config.json 2>/dev/null || true`);
+  execCmd(`sed -i "/{.*\\"email\\".*\\"${username}\\".*/d" /etc/xray/config.json 2>/dev/null || true`);
+  execCmd(`sed -i "/^#& ${username}/d" /etc/vless/.vless.db 2>/dev/null || true`);
+  execCmd(`rm -f /etc/vless/${username} /etc/kyt/limit/vless/ip/${username} /var/www/html/vless-${username}.txt`);
   execCmd(`systemctl restart xray 2>/dev/null || true`);
-  sendJSON(res, 200, { status:'success', message:`User VLess ${user} berhasil dihapus`, user });
+  sendJSON(res, 200, { status:'success', message:`VLess account ${username} deleted successfully` });
 }
 
 // ─── Delete Trojan ────────────────────────────────────────────────────────────
 function handleDeleteTrojan(params, res) {
-  const { user } = params;
-  if (!user) return sendJSON(res, 400, { status:'error', message:'Required: user' });
-  const inDb = execCmd(`grep -w "^### ${user} " /etc/trojan/.trojan.db 2>/dev/null`);
-  if (!inDb.out.trim()) return sendJSON(res, 404, { status:'error', message:`User Trojan ${user} tidak ditemukan` });
-  execCmd(`sed -i "/#! ${user} /d" /etc/xray/config.json 2>/dev/null || true`);
-  execCmd(`sed -i "/{.*\\"email\\".*\\"${user}\\".*/d" /etc/xray/config.json 2>/dev/null || true`);
-  execCmd(`sed -i "/^### ${user}/d" /etc/trojan/.trojan.db 2>/dev/null || true`);
-  execCmd(`rm -f /etc/trojan/${user} /etc/kyt/limit/trojan/ip/${user} /var/www/html/trojan-${user}.txt`);
+  const username = params.username || params.user;
+  if (!username) return sendJSON(res, 400, { status:'error', message:'Required: username' });
+  const inDb = execCmd(`grep -w "^### ${username} " /etc/trojan/.trojan.db 2>/dev/null`);
+  if (!inDb.out.trim()) return sendJSON(res, 404, { status:'error', message:`Trojan account ${username} not found` });
+  execCmd(`sed -i "/#! ${username} /d" /etc/xray/config.json 2>/dev/null || true`);
+  execCmd(`sed -i "/{.*\\"email\\".*\\"${username}\\".*/d" /etc/xray/config.json 2>/dev/null || true`);
+  execCmd(`sed -i "/^### ${username}/d" /etc/trojan/.trojan.db 2>/dev/null || true`);
+  execCmd(`rm -f /etc/trojan/${username} /etc/kyt/limit/trojan/ip/${username} /var/www/html/trojan-${username}.txt`);
   execCmd(`systemctl restart xray 2>/dev/null || true`);
-  sendJSON(res, 200, { status:'success', message:`User Trojan ${user} berhasil dihapus`, user });
+  sendJSON(res, 200, { status:'success', message:`Trojan account ${username} deleted successfully` });
 }
 
 // ─── Server & Router ─────────────────────────────────────────────────────────
@@ -1185,11 +1197,17 @@ const server = http.createServer((req, res) => {
   if (pathname === '/api/trial-trojan')  return handleTrialTrojan(params, res);
   if (pathname === '/api/create-trojan') return handleCreateTrojan(params, res);
 
-  // Delete routes
+  // Delete routes (long form)
   if (pathname === '/api/delete-ssh')    return handleDeleteSSH(params, res);
   if (pathname === '/api/delete-vmess')  return handleDeleteVmess(params, res);
   if (pathname === '/api/delete-vless')  return handleDeleteVless(params, res);
   if (pathname === '/api/delete-trojan') return handleDeleteTrojan(params, res);
+
+  // Delete routes (short alias — ?username= or ?user=)
+  if (pathname === '/api/delssh')  return handleDeleteSSH(params, res);
+  if (pathname === '/api/delws')   return handleDeleteVmess(params, res);
+  if (pathname === '/api/delvl')   return handleDeleteVless(params, res);
+  if (pathname === '/api/deltr')   return handleDeleteTrojan(params, res);
 
   sendJSON(res, 404, { status: 'error', message: `Not found: ${pathname} — see /api/doc.html` });
 });
