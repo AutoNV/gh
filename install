@@ -13,8 +13,8 @@ red='\e[1;31m'
 green='\e[0;32m'
 TIME=$(date '+%d %b %Y')
 TIMES="10"
-CHATID="19621851"
-KEY="8238209608:AAGflWVin-HM9sif6E7SMJF0FgShY"
+CHATID="1962185w1"
+KEY="8238209608:AAGflWVJF0FgShY"
 URL="https://api.telegram.org/bot$KEY/sendMessage"
 function print_ok() {
 echo -e "${OK} ${BLUE} $1 ${FONT}"
@@ -223,7 +223,7 @@ TEXT="
 <code>Exp Sc : </code><code>$EXPSC</code>
 <code>────────────────────</code>
 <i>Automatic Notification from Github</i>
-"'&reply_markup={"inline_keyboard":[[{"text":"ᴏʀᴅᴇʀ","url":"https://wa.me/ARI_VPN_STORE"},{"text":"Contact","url":"https://wa.me/6281327393959"}]]}'
+"'&reply_markup={"inline_keyboard":[[{"text":"ᴏʀᴅᴇʀ","url":"https://wa.me/nexusdev"},{"text":"Contact","url":"https://wa.me/nexusdev"}]]}'
 curl -s --max-time $TIMES -d "chat_id=$CHATID&disable_web_page_preview=1&text=$TEXT&parse_mode=html" $URL >/dev/null
 }
 auto_system() {
@@ -1096,7 +1096,7 @@ cd
 wget -O udp.sh https://raw.githubusercontent.com/arivpnstores/v4/main/udp.sh
 chmod +x udp.sh
 ./udp.sh
-print_success "UDP-CUSTOM BY ARISCTUNNEL V4"
+print_success "UDP-CUSTOM BY NEXUSDEV"
 }
 function NOOBZVPNS() {
 clear
@@ -1105,7 +1105,7 @@ wget -q https://raw.githubusercontent.com/arivpnstores/v4/main/noobzvpn-install.
 chmod +x noobzvpn-install.sh
 bash noobzvpn-install.sh
 systemctl restart noobzvpns
-print_success "NOOBZVPNS BY ARISCTUNNEL V4"
+print_success "NOOBZVPNS BY NEXUSDEV"
 }
 function ins_restart(){
 clear
@@ -1270,83 +1270,175 @@ systemctl restart haproxy
 print_success "Enable Service"
 clear
 }
+
+# ─── Progress Bar Animation ─────────────────────────────────────────────────
+PROGRESS=0
+TOTAL_STEPS=20
+
+show_progress() {
+  local step="$1"
+  local label="$2"
+  local pct=$(( step * 100 / TOTAL_STEPS ))
+  local filled=$(( pct / 2 ))
+  local empty=$(( 50 - filled ))
+  local bar=""
+  for ((i=0; i<filled; i++)); do bar+="█"; done
+  for ((i=0; i<empty; i++)); do  bar+="░"; done
+  clear
+  echo ""
+  echo -e "\033[96;1m  ╔══════════════════════════════════════════════════╗\033[0m"
+  echo -e "\033[96;1m  ║           ⚡  NEXUSDEV  INSTALLER                ║\033[0m"
+  echo -e "\033[96;1m  ╚══════════════════════════════════════════════════╝\033[0m"
+  echo ""
+  if   [[ $pct -lt 30 ]]; then COLOR="\033[91;1m"
+  elif [[ $pct -lt 60 ]]; then COLOR="\033[93;1m"
+  elif [[ $pct -lt 90 ]]; then COLOR="\033[96;1m"
+  else COLOR="\033[92;1m"; fi
+  echo -e "  ${COLOR}[${bar}] ${pct}%\033[0m"
+  echo ""
+  echo -e "  \033[97m⟳  ${label}\033[0m"
+  echo ""
+  [[ $pct -eq 100 ]] && echo -e "  \033[92;1m✔  INSTALASI SELESAI!\033[0m" && echo ""
+}
+
+# ─── Install API Function ────────────────────────────────────────────────────
+function install_api_service(){
+mkdir -p /etc/xray/api
+if ! command -v node &>/dev/null; then
+curl -fsSL https://deb.nodesource.com/setup_18.x | bash - >/dev/null 2>&1
+apt-get install -y nodejs >/dev/null 2>&1
+fi
+if [[ ! -f /etc/ssh/api_auth.key ]] || [[ -z "$(cat /etc/ssh/api_auth.key 2>/dev/null)" ]]; then
+NEW_KEY=$(tr -dc 'a-z0-9' < /dev/urandom | head -c 12)
+echo "$NEW_KEY" > /etc/ssh/api_auth.key
+chmod 600 /etc/ssh/api_auth.key
+fi
+wget -q -O /etc/xray/api/api.js \
+  "https://raw.githubusercontent.com/AutoNV/gh/main/api/api.js" 2>/dev/null || true
+cat > /etc/systemd/system/xray-api.service <<'EOF'
+[Unit]
+Description=NEXUSDEV REST API Service
+After=network.target
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/etc/xray/api
+ExecStart=/usr/bin/node /etc/xray/api/api.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+[Install]
+WantedBy=multi-user.target
+EOF
+# Patch nginx untuk /api/ proxy
+NGINX_CONF="/etc/nginx/conf.d/xray.conf"
+if [[ -f "$NGINX_CONF" ]] && ! grep -q "location /api/" "$NGINX_CONF" 2>/dev/null; then
+python3 - <<'PYEOF'
+import sys
+with open("/etc/nginx/conf.d/xray.conf", "r") as f:
+    content = f.read()
+location_block = """
+    # ── REST API proxy (NEXUSDEV) ──────────────────────────────
+    location /api/ {
+        proxy_pass         http://127.0.0.1:7979;
+        proxy_http_version 1.1;
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto $scheme;
+        proxy_read_timeout 30s;
+        proxy_connect_timeout 10s;
+        add_header Access-Control-Allow-Origin  "*" always;
+        add_header Access-Control-Allow-Methods "GET, POST, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Authorization, Content-Type" always;
+        if ($request_method = OPTIONS) { return 204; }
+    }
+    # ────────────────────────────────────────────────────────────
+"""
+last_brace = content.rfind("}")
+if last_brace != -1:
+    new_content = content[:last_brace] + location_block + "\n" + content[last_brace:]
+    with open("/etc/nginx/conf.d/xray.conf", "w") as f:
+        f.write(new_content)
+PYEOF
+fi
+iptables -I INPUT -p tcp --dport 7979 -j ACCEPT 2>/dev/null || true
+systemctl daemon-reload
+systemctl enable xray-api.service >/dev/null 2>&1
+systemctl stop  xray-api.service  >/dev/null 2>&1
+systemctl start xray-api.service
+nginx -t >/dev/null 2>&1 && systemctl reload nginx 2>/dev/null || true
+}
+
 function instal(){
-clear
-print_install "Menginstall first_setup"
+show_progress 1  "Menyiapkan sistem..."
 first_setup
-clear
-print_install "Menginstall nginx"
+
+show_progress 2  "Menginstall Nginx..."
 nginx_install
-clear
-print_install "Menginstall folder_xray"
+
+show_progress 3  "Membuat folder Xray..."
 make_folder_xray
-clear
-print_install "Menginstall pasang_ssl"
+
+show_progress 4  "Memasang SSL Certificate..."
 pasang_ssl
-clear
-print_install "Menginstall xray"
+
+show_progress 5  "Menginstall Xray Core..."
 install_xray
-clear
-print_install "Menginstall ssh"
+
+show_progress 6  "Mengkonfigurasi SSH..."
 ssh
-clear
-print_install "Menginstall UDP-ZIVPN"
+
+show_progress 7  "Menginstall UDP-ZIVPN..."
 UDP-ZIVPN
-clear
-print_install "Menginstall UDP-CUSTOM"
+
+show_progress 8  "Menginstall UDP-CUSTOM..."
 UDP-CUSTOM
-clear
-print_install "Menginstall NOOBZVPNS"
+
+show_progress 9  "Menginstall NOOBZVPNS..."
 NOOBZVPNS
-clear
-print_install "Menginstall udp_mini"
+
+show_progress 10 "Menginstall Quota & Limit..."
 udp_mini
-clear
-print_install "Menginstall ssh_slow"
+
+show_progress 11 "Menginstall SlowDNS..."
 ssh_slow
-clear
-print_install "Menginstall SSHD"
+
+show_progress 12 "Mengkonfigurasi SSHD..."
 ins_SSHD
-clear
-print_install "Menginstall dropbear"
+
+show_progress 13 "Menginstall Dropbear..."
 ins_dropbear
-clear
-print_install "Menginstall vnstat"
+
+show_progress 14 "Menginstall Vnstat..."
 ins_vnstat
-clear
-print_install "Menginstall openvpn"
+
+show_progress 15 "Menginstall OpenVPN..."
 ins_openvpn
-clear
-print_install "Menginstall backup"
+
+show_progress 16 "Menginstall Backup & Swap..."
 ins_backup
-clear
-print_install "Menginstall swab"
 ins_swab
-clear
-print_install "Menginstall Fail2ban"
+
+show_progress 17 "Menginstall Fail2ban & ePro..."
 ins_Fail2ban
-clear
-print_install "Menginstall epro"
 ins_epro
-clear
-print_install "Menginstall restart"
+
+show_progress 18 "Restart semua service..."
 ins_restart
-clear
-print_install "Menginstall menu"
+
+show_progress 19 "Memasang Menu & Profile..."
 menuv4
-clear
-print_install "Menginstall profile"
 profile
-clear
-print_install "enable_services"
 enable_services
-clear
-print_install "restart_system"
+
+show_progress 20 "Menginstall REST API NEXUSDEV..."
+install_api_service
+
+show_progress 20 "Menyelesaikan instalasi..."
 restart_system
-clear
-print_install "auto_system"
 auto_system
-clear
 }
 instal
 echo ""
@@ -1363,11 +1455,23 @@ rm -rf /root/README.md
 rm -rf /root/domain
 secs_to_human "$(($(date +%s) - ${start}))"
 sudo hostnamectl set-hostname $username
+DOMAIN_DONE=$(cat /etc/xray/domain 2>/dev/null || echo "yourdomain.com")
+AUTH_KEY_DONE=$(cat /etc/ssh/api_auth.key 2>/dev/null || echo "-")
 clear
-echo -e "\033[96m==========================\033[0m"
-echo -e "\033[92m      INSTALL SUCCES      \033[0m"
-echo -e "\033[96m==========================\033[0m"
-echo -e ""
-read -n 1 -s -r -p "Press any key to back on menu"
+echo ""
+echo -e "\033[96;1m  ╔══════════════════════════════════════════════════╗\033[0m"
+echo -e "\033[96;1m  ║           ⚡  NEXUSDEV  INSTALLER                ║\033[0m"
+echo -e "\033[96;1m  ╚══════════════════════════════════════════════════╝\033[0m"
+echo ""
+echo -e "  \033[92;1m[██████████████████████████████████████████████████] 100%\033[0m"
+echo ""
+echo -e "\033[96;1m  ┌────────────────────────────────────────────────┐\033[0m"
+echo -e "\033[96;1m  │\033[0m  \033[92;1m✔  INSTALASI NEXUSDEV BERHASIL!\033[0m"
+echo -e "\033[96;1m  │\033[0m  Domain   : \033[93m${DOMAIN_DONE}\033[0m"
+echo -e "\033[96;1m  │\033[0m  API Key  : \033[93m${AUTH_KEY_DONE}\033[0m"
+echo -e "\033[96;1m  │\033[0m  API Docs : \033[96mhttps://${DOMAIN_DONE}/api/doc.html\033[0m"
+echo -e "\033[96;1m  └────────────────────────────────────────────────┘\033[0m"
+echo ""
+read -n 1 -s -r -p "  Tekan sembarang tombol untuk masuk menu..."
 menu
 rm -rf /root/install
