@@ -465,7 +465,7 @@ button:hover{background:#2ea043}
 <body>
 <div class="card">
   <div class="logo">⚡</div>
-  <h1>NEXUSDEV API</h1>
+  <h1>NEXUSDEV API v1</h1>
   <p>Masukkan Auth Key untuk mengakses<br>dokumentasi API</p>
   <input type="password" id="key" placeholder="Auth Key..." onkeydown="if(event.key==='Enter')login()">
   <button onclick="login()">Masuk →</button>
