@@ -1,0 +1,16 @@
+[Unit]
+Description=ARISCTUNNEL V4 REST API Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/etc/xray/api
+ExecStart=/usr/bin/node /etc/xray/api/api.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
