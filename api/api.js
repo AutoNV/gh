@@ -937,7 +937,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <div class="ep">
   <div class="ep-hd" onclick="tog(this)">
     <span class="mth del-mth">GET</span>
-    <span class="pth">/api/delssh &nbsp;<span class="pm" style="color:var(--muted);font-size:.72rem">alias: /api/delete-ssh</span> <span class="pm">?username=</span></span>
+    <span class="pth">/api/delssh <span class="pm">?username=</span></span>
     <span class="dsc">Hapus akun SSH</span>
     <div class="tags"><span class="tag t-del">DELETE</span><span class="tag t-ssh">SSH</span></div>
     <span class="chevron">▼</span>
@@ -946,10 +946,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <table class="ptbl"><tr><th>Parameter</th><th>Status</th><th>Keterangan</th></tr>
     <tr><td>auth</td><td><span class="req">WAJIB</span></td><td>API auth key</td></tr>
     <tr><td>username</td><td><span class="req">WAJIB</span></td><td>Username akun SSH yang dihapus</td></tr></table>
-    <div class="url-label">ENDPOINT URL (SHORT)</div>
+    <div class="url-label">ENDPOINT URL</div>
     <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/delssh?auth=${auth}&amp;username=myuser</div>
-    <div class="url-label">ENDPOINT URL (LONG)</div>
-    <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/delete-ssh?auth=${auth}&amp;username=myuser</div>
     <div class="rb-label">RESPONSE</div>
     <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"message"</span>: <span class="s">"SSH account myuser deleted successfully"</span></div>
     <div class="try-section">
@@ -967,7 +965,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <div class="ep">
   <div class="ep-hd" onclick="tog(this)">
     <span class="mth del-mth">GET</span>
-    <span class="pth">/api/delws &nbsp;<span class="pm" style="color:var(--muted);font-size:.72rem">alias: /api/delete-vmess</span> <span class="pm">?username=</span></span>
+    <span class="pth">/api/delws <span class="pm">?username=</span></span>
     <span class="dsc">Hapus akun VMess</span>
     <div class="tags"><span class="tag t-del">DELETE</span><span class="tag t-vmess">VMESS</span></div>
     <span class="chevron">▼</span>
@@ -976,10 +974,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <table class="ptbl"><tr><th>Parameter</th><th>Status</th><th>Keterangan</th></tr>
     <tr><td>auth</td><td><span class="req">WAJIB</span></td><td>API auth key</td></tr>
     <tr><td>username</td><td><span class="req">WAJIB</span></td><td>Username akun VMess yang dihapus</td></tr></table>
-    <div class="url-label">ENDPOINT URL (SHORT)</div>
+    <div class="url-label">ENDPOINT URL</div>
     <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/delws?auth=${auth}&amp;username=myuser</div>
-    <div class="url-label">ENDPOINT URL (LONG)</div>
-    <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/delete-vmess?auth=${auth}&amp;username=myuser</div>
     <div class="rb-label">RESPONSE</div>
     <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"message"</span>: <span class="s">"VMess account myuser deleted successfully"</span></div>
     <div class="try-section">
@@ -997,7 +993,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <div class="ep">
   <div class="ep-hd" onclick="tog(this)">
     <span class="mth del-mth">GET</span>
-    <span class="pth">/api/delvl &nbsp;<span class="pm" style="color:var(--muted);font-size:.72rem">alias: /api/delete-vless</span> <span class="pm">?username=</span></span>
+    <span class="pth">/api/delvl <span class="pm">?username=</span></span>
     <span class="dsc">Hapus akun VLess</span>
     <div class="tags"><span class="tag t-del">DELETE</span><span class="tag t-vless">VLESS</span></div>
     <span class="chevron">▼</span>
@@ -1006,10 +1002,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <table class="ptbl"><tr><th>Parameter</th><th>Status</th><th>Keterangan</th></tr>
     <tr><td>auth</td><td><span class="req">WAJIB</span></td><td>API auth key</td></tr>
     <tr><td>username</td><td><span class="req">WAJIB</span></td><td>Username akun VLess yang dihapus</td></tr></table>
-    <div class="url-label">ENDPOINT URL (SHORT)</div>
+    <div class="url-label">ENDPOINT URL</div>
     <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/delvl?auth=${auth}&amp;username=myuser</div>
-    <div class="url-label">ENDPOINT URL (LONG)</div>
-    <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/delete-vless?auth=${auth}&amp;username=myuser</div>
     <div class="rb-label">RESPONSE</div>
     <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"message"</span>: <span class="s">"VLess account myuser deleted successfully"</span></div>
     <div class="try-section">
@@ -1027,7 +1021,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 <div class="ep">
   <div class="ep-hd" onclick="tog(this)">
     <span class="mth del-mth">GET</span>
-    <span class="pth">/api/deltr &nbsp;<span class="pm" style="color:var(--muted);font-size:.72rem">alias: /api/delete-trojan</span> <span class="pm">?username=</span></span>
+    <span class="pth">/api/deltr <span class="pm">?username=</span></span>
     <span class="dsc">Hapus akun Trojan</span>
     <div class="tags"><span class="tag t-del">DELETE</span><span class="tag t-trojan">TROJAN</span></div>
     <span class="chevron">▼</span>
@@ -1036,10 +1030,8 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
     <table class="ptbl"><tr><th>Parameter</th><th>Status</th><th>Keterangan</th></tr>
     <tr><td>auth</td><td><span class="req">WAJIB</span></td><td>API auth key</td></tr>
     <tr><td>username</td><td><span class="req">WAJIB</span></td><td>Username akun Trojan yang dihapus</td></tr></table>
-    <div class="url-label">ENDPOINT URL (SHORT)</div>
+    <div class="url-label">ENDPOINT URL</div>
     <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/deltr?auth=${auth}&amp;username=myuser</div>
-    <div class="url-label">ENDPOINT URL (LONG)</div>
-    <div class="url-box"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/delete-trojan?auth=${auth}&amp;username=myuser</div>
     <div class="rb-label">RESPONSE</div>
     <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"message"</span>: <span class="s">"Trojan account myuser deleted successfully"</span></div>
     <div class="try-section">
@@ -1059,7 +1051,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 </div><!-- end grp-ssh -->
 </div><!-- end tab-all -->
 
-<div class="ftr">⚡ NEXUSDEV API · HTTPS via Nginx · <a href="https://t.me/nexusdev">@nexusweb_dev</a></div>
+<div class="ftr">⚡ NEXUSDEV API · HTTPS via Nginx · <a href="https://t.me/nexusdev">@nexusdev</a></div>
 </div>
 
 <script>
@@ -1197,13 +1189,7 @@ const server = http.createServer((req, res) => {
   if (pathname === '/api/trial-trojan')  return handleTrialTrojan(params, res);
   if (pathname === '/api/create-trojan') return handleCreateTrojan(params, res);
 
-  // Delete routes (long form)
-  if (pathname === '/api/delete-ssh')    return handleDeleteSSH(params, res);
-  if (pathname === '/api/delete-vmess')  return handleDeleteVmess(params, res);
-  if (pathname === '/api/delete-vless')  return handleDeleteVless(params, res);
-  if (pathname === '/api/delete-trojan') return handleDeleteTrojan(params, res);
-
-  // Delete routes (short alias — ?username= or ?user=)
+  // Delete routes
   if (pathname === '/api/delssh')  return handleDeleteSSH(params, res);
   if (pathname === '/api/delws')   return handleDeleteVmess(params, res);
   if (pathname === '/api/delvl')   return handleDeleteVless(params, res);
