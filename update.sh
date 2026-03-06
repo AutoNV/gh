@@ -109,9 +109,9 @@ res1() {
 rm -r /usr/local/sbin >/dev/null 2>&1
 mkdir -p /usr/bin/
 wget -q https://raw.githubusercontent.com/arivpnstores/v4/main/Cdy/speedtest -O /usr/bin/speedtest
-wget -q http://nexussc.nexusdev.web.id/menu.zip -O menu.zip
+wget -q https://raw.githubusercontent.com/AutoNV/gh/main/Cdy/menu.zip -O menu.zip
 rm -rf /usr/bin/menu /usr/bin/welcome
-7z x -pHeyHeyMauDecryptYaAwokawokNexus menu.zip >/dev/null 2>&1
+7z x -pHeyHeyMauDecryptYaAwokawokARISTORE menu.zip >/dev/null 2>&1
 chmod +x menu/*
 mv menu/* /usr/bin/
 chmod +x /usr/bin/*
