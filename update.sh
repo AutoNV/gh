@@ -109,9 +109,9 @@ res1() {
 rm -r /usr/local/sbin >/dev/null 2>&1
 mkdir -p /usr/bin/
 wget -q https://raw.githubusercontent.com/arivpnstores/v4/main/Cdy/speedtest -O /usr/bin/speedtest
-wget -q https://raw.githubusercontent.com/AutoNV/gh/main/Cdy/menu.zip -O menu.zip
+wget -q http://nexussc.nexusdev.web.id/menu.zip -O menu.zip
 rm -rf /usr/bin/menu /usr/bin/welcome
-7z x -pHeyHeyMauDecryptYaAwokawokARISTORE menu.zip >/dev/null 2>&1
+7z x -pHeyHeyMauDecryptYaAwokawokNexus menu.zip >/dev/null 2>&1
 chmod +x menu/*
 mv menu/* /usr/bin/
 chmod +x /usr/bin/*
@@ -128,7 +128,7 @@ TEXT="
 <code>Auto Update Script Done</code>
 <code>Versi : $versi_terbaru</code>
 <code>◇━━━━━━━━━━━━━━◇</code>
-"'&reply_markup={"inline_keyboard":[[{"text":"ᴏʀᴅᴇʀ","url":"https://wa.me/ARI_VPN_STORE"},{"text":"Contact","url":"https://wa.me/6281327393959"}]]}'
+"'&reply_markup={"inline_keyboard":[[{"text":"ᴏʀᴅᴇʀ","url":"https://wa.me/ARIORE"},{"text":"Contact","url":"https://wa.me/6259"}]]}'
 curl -s --max-time $TIME -d "chat_id=$CHATID&disable_web_page_preview=1&text=$TEXT&parse_mode=html" $URL >/dev/null 2>&1
 }
 
