@@ -704,7 +704,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
       <div class="logo-tx">NEXUS<span>DEV</span> <small>API</small></div>
     </div>
     <div class="hdr-r">
-      <span class="badge bl">● LIVE 1</span>
+      <span class="badge bl">● LIVE 2</span>
       <span class="badge bv">v4.1</span>
       <div class="key-pill">🔑 <span>${auth || 'not set'}</span></div>
     </div>
@@ -1260,7 +1260,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 
 </div><!-- /tab-all -->
 
-<div class="ftr">⚡ NEXUSDEV API · HTTPS via Nginx danzi · <a href="https://t.me/nexusdev">@nexusdev</a></div>
+<div class="ftr">⚡ NEXUSDEV API · HTTPS via Nginx · <a href="https://t.me/nexusdev">@nexusdev</a></div>
 </div>
 
 <script>
@@ -1330,8 +1330,8 @@ function handleCreateZivpn(params, res) {
   const domain  = getDomain();
 
   // Cek password sudah ada
-  const check = execCmd(`grep -q "^${password}:" /etc/zivpn/users.db 2>/dev/null && echo "exists"`);
-  if (check.out.includes('exists'))
+  const check = execCmd(`grep "^${password}:" /etc/zivpn/users.db 2>/dev/null || true`);
+  if (check.out.trim().length > 0)
     return sendJSON(res, 409, { status: 'error', message: `Password '${password}' already exists` });
 
   // Hitung expiry dalam unix timestamp
