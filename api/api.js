@@ -513,7 +513,7 @@ function handleDocPage(params, res) {
   --accent:#0284c7;--accent2:#6366f1;--accent3:#059669;--accent4:#d97706;--accent5:#dc2626;
   --text:#0f172a;--muted:#64748b;--muted2:#475569;
   --ssh:#059669;--vmess:#2563eb;--vless:#7c3aed;--trojan:#e11d48;
-  --trial:#d97706;--del:#dc2626;--ren:#0891b2;
+  --trial:#d97706;--del:#dc2626;--ren:#0891b2;--zivpn:#0891b2;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
@@ -623,6 +623,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .tg-trial{background:#fef3c7;color:#78350f;border:1px solid #fde68a}
 .tg-del{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
 .tg-ren{background:#cffafe;color:#164e63;border:1px solid #a5f3fc}
+.tg-zivpn{background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc}
 .chev{color:var(--muted);font-size:.68rem;transition:transform .2s;flex-shrink:0}
 .ep-bd{display:none;border-top:1.5px solid var(--border2);padding:18px;background:#fafcff}
 .ep-bd.open{display:block}
@@ -715,7 +716,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 <div class="hero">
   <div class="hero-tag">⚡ REST API · HTTPS · Zero Port</div>
   <h1><span class="gr">NEXUSDEV</span><br>VPN Manager API</h1>
-  <p>Kelola akun SSH, VMess, VLess &amp; Trojan via REST API.<br>Create · Trial · Renew · Delete — semua via HTTPS.</p>
+  <p>Kelola akun SSH, VMess, VLess, Trojan &amp; ZIVPN via REST API.<br>Create · Trial · Renew · Delete — semua via HTTPS.</p>
   <div class="base-box">
     <span class="lbl">Base URL</span>
     <span class="val">${baseUrl}</span>
@@ -727,8 +728,9 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   <div class="stat st2"><div class="stat-n">3</div><div class="stat-l">VMESS</div></div>
   <div class="stat st3"><div class="stat-n">3</div><div class="stat-l">VLESS</div></div>
   <div class="stat st4"><div class="stat-n">3</div><div class="stat-l">TROJAN</div></div>
-  <div class="stat st5"><div class="stat-n">4</div><div class="stat-l">DELETE</div></div>
-  <div class="stat st6"><div class="stat-n">4</div><div class="stat-l">RENEW</div></div>
+  <div class="stat" style="--c:#0891b2"><div class="stat-n" style="color:#0891b2">4</div><div class="stat-l">ZIVPN</div></div>
+  <div class="stat st5"><div class="stat-n">5</div><div class="stat-l">DELETE</div></div>
+  <div class="stat st6"><div class="stat-n">5</div><div class="stat-l">RENEW</div></div>
 </div>
 
 <div class="tabs">
@@ -737,6 +739,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   <div class="tab tv"     onclick="showTab('vmess',this)">🔵 VMess</div>
   <div class="tab tvl"    onclick="showTab('vless',this)">🟣 VLess</div>
   <div class="tab ttr"    onclick="showTab('trojan',this)">🔴 Trojan</div>
+  <div class="tab"        onclick="showTab('zivpn',this)" style="border-top-color:#0891b2">🌐 ZIVPN</div>
   <div class="tab tdl"    onclick="showTab('del',this)">🗑 Delete</div>
   <div class="tab trn"    onclick="showTab('ren',this)">🔄 Renew</div>
 </div>
@@ -952,6 +955,107 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 </div></div>
 </div><!-- /grp-trojan -->
 
+<!-- ═══ ZIVPN ═══ -->
+<div id="grp-zivpn">
+<div class="sh"><div class="sh-dot" style="background:#0891b2"></div><span class="sh-lbl">ZIVPN</span><div class="sh-line"></div></div>
+
+<div class="ep"><div class="ep-hd" onclick="tog(this)">
+  <span class="mth mg">GET</span>
+  <span class="ep-path">/api/trial-zivpn <span class="pm">?minutes=</span></span>
+  <span class="ep-dsc">Trial ZIVPN (default 60 menit)</span>
+  <div class="tags"><span class="tag tg-zivpn">ZIVPN</span><span class="tag tg-trial">TRIAL</span></div>
+  <span class="chev">▼</span>
+</div><div class="ep-bd">
+  <table class="pt"><tr><th>Parameter</th><th>Status</th><th>Keterangan</th></tr>
+  <tr><td>auth</td><td><span class="req">WAJIB</span></td><td>API auth key</td></tr>
+  <tr><td>minutes</td><td><span class="opt">OPSIONAL</span></td><td>Durasi trial (default: 60 menit)</td></tr></table>
+  <div class="ul">ENDPOINT</div>
+  <div class="ub"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/trial-zivpn?auth=${auth}&amp;minutes=60</div>
+  <div class="rl">RESPONSE</div>
+  <div class="rb"><span class="k">"host"</span>: <span class="s">"domain.com"</span>, <span class="k">"password"</span>: <span class="s">"trial12345"</span>, <span class="k">"expired"</span>: <span class="s">"60 Minutes"</span>, <span class="k">"expiredDate"</span>: <span class="s">"07 March 2026 14:00"</span></div>
+  <div class="try-sec"><div class="try-ttl">⚡ TRY IT</div>
+    <div class="try-ins">
+      <input class="ti" id="tzv-m" placeholder="minutes (default: 60)" style="max-width:160px">
+      <button class="tr-btn tr-go" onclick="tryApi(\`${baseUrl}/api/trial-zivpn?auth=${auth}&minutes=\${gi('tzv-m')||60}\`,this,'o-tzv')">Run →</button>
+    </div>
+    <div class="try-out" id="o-tzv"></div>
+  </div>
+</div></div>
+
+<div class="ep"><div class="ep-hd" onclick="tog(this)">
+  <span class="mth mg">GET</span>
+  <span class="ep-path">/api/create-zivpn <span class="pm">?password= &exp=</span></span>
+  <span class="ep-dsc">Buat akun ZIVPN</span>
+  <div class="tags"><span class="tag tg-zivpn">ZIVPN</span></div>
+  <span class="chev">▼</span>
+</div><div class="ep-bd">
+  <table class="pt"><tr><th>Parameter</th><th>Status</th><th>Keterangan</th></tr>
+  <tr><td>auth</td><td><span class="req">WAJIB</span></td><td>API auth key</td></tr>
+  <tr><td>password</td><td><span class="req">WAJIB</span></td><td>Password akun ZIVPN</td></tr>
+  <tr><td>exp</td><td><span class="req">WAJIB</span></td><td>Masa aktif (hari)</td></tr></table>
+  <div class="ul">ENDPOINT</div>
+  <div class="ub"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/create-zivpn?auth=${auth}&amp;password=mypass&amp;exp=30</div>
+  <div class="rl">RESPONSE</div>
+  <div class="rb"><span class="k">"host"</span>: <span class="s">"domain.com"</span>, <span class="k">"ip"</span>: <span class="s">"1.2.3.4"</span>, <span class="k">"password"</span>: <span class="s">"mypass"</span>, <span class="k">"expired"</span>: <span class="s">"30 Days"</span>, <span class="k">"expiredDate"</span>: <span class="s">"06 April 2026 00:00"</span></div>
+  <div class="try-sec"><div class="try-ttl">⚡ TRY IT</div>
+    <div class="try-ins">
+      <input class="ti" id="czv-p" placeholder="password">
+      <input class="ti" id="czv-e" placeholder="exp (hari)" style="max-width:90px">
+      <button class="tr-btn tr-go" onclick="tryApi(\`${baseUrl}/api/create-zivpn?auth=${auth}&password=\${gi('czv-p')}&exp=\${gi('czv-e')||30}\`,this,'o-czv')">Run →</button>
+    </div>
+    <div class="try-out" id="o-czv"></div>
+  </div>
+</div></div>
+
+<div class="ep"><div class="ep-hd" onclick="tog(this)">
+  <span class="mth md">GET</span>
+  <span class="ep-path">/api/delzv <span class="pm">?password=</span></span>
+  <span class="ep-dsc">Hapus akun ZIVPN</span>
+  <div class="tags"><span class="tag tg-del">DELETE</span><span class="tag tg-zivpn">ZIVPN</span></div>
+  <span class="chev">▼</span>
+</div><div class="ep-bd">
+  <table class="pt"><tr><th>Parameter</th><th>Status</th><th>Keterangan</th></tr>
+  <tr><td>auth</td><td><span class="req">WAJIB</span></td><td>API auth key</td></tr>
+  <tr><td>password</td><td><span class="req">WAJIB</span></td><td>Password akun yang dihapus</td></tr></table>
+  <div class="ul">ENDPOINT</div>
+  <div class="ub"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/delzv?auth=${auth}&amp;password=mypass</div>
+  <div class="rl">RESPONSE</div>
+  <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>, <span class="k">"message"</span>: <span class="s">"ZIVPN account 'mypass' deleted successfully"</span></div>
+  <div class="try-sec"><div class="try-ttl">⚡ TRY IT</div>
+    <div class="try-ins">
+      <input class="ti" id="dzv-p" placeholder="password">
+      <button class="tr-btn tr-del" onclick="tryApi(\`${baseUrl}/api/delzv?auth=${auth}&password=\${gi('dzv-p')}\`,this,'o-dzv')">Delete →</button>
+    </div>
+    <div class="try-out" id="o-dzv"></div>
+  </div>
+</div></div>
+
+<div class="ep"><div class="ep-hd" onclick="tog(this)">
+  <span class="mth mr">GET</span>
+  <span class="ep-path">/api/renzv <span class="pm">?password= &exp=</span></span>
+  <span class="ep-dsc">Perpanjang akun ZIVPN</span>
+  <div class="tags"><span class="tag tg-ren">RENEW</span><span class="tag tg-zivpn">ZIVPN</span></div>
+  <span class="chev">▼</span>
+</div><div class="ep-bd">
+  <table class="pt"><tr><th>Parameter</th><th>Status</th><th>Keterangan</th></tr>
+  <tr><td>auth</td><td><span class="req">WAJIB</span></td><td>API auth key</td></tr>
+  <tr><td>password</td><td><span class="req">WAJIB</span></td><td>Password akun ZIVPN</td></tr>
+  <tr><td>exp</td><td><span class="req">WAJIB</span></td><td>Jumlah hari perpanjangan</td></tr></table>
+  <div class="ul">ENDPOINT</div>
+  <div class="ub"><button class="cp" onclick="cpUrl(this)">Copy</button>${baseUrl}/api/renzv?auth=${auth}&amp;password=mypass&amp;exp=30</div>
+  <div class="rl">RESPONSE</div>
+  <div class="rb"><span class="k">"status"</span>: <span class="s">"success"</span>,<br><span class="k">"data"</span>: {<br>  <span class="k">"host"</span>: <span class="s">"domain.com"</span>,<br>  <span class="k">"password"</span>: <span class="s">"mypass"</span>,<br>  <span class="k">"previous_expiry"</span>: <span class="s">"07 March 2026 00:00"</span>,<br>  <span class="k">"days_added"</span>: <span class="n">30</span>,<br>  <span class="k">"expired"</span>: <span class="s">"06 April 2026 00:00"</span><br>}</div>
+  <div class="try-sec"><div class="try-ttl">⚡ TRY IT</div>
+    <div class="try-ins">
+      <input class="ti" id="rzv-p" placeholder="password">
+      <input class="ti" id="rzv-e" placeholder="exp (hari)" style="max-width:100px">
+      <button class="tr-btn tr-ren" onclick="tryApi(\`${baseUrl}/api/renzv?auth=${auth}&password=\${gi('rzv-p')}&exp=\${gi('rzv-e')||30}\`,this,'o-rzv')">Renew →</button>
+    </div>
+    <div class="try-out" id="o-rzv"></div>
+  </div>
+</div></div>
+</div><!-- /grp-zivpn -->
+
 <!-- ═══ DELETE ═══ -->
 <div id="grp-del">
 <div class="sh"><div class="sh-dot" style="background:var(--del)"></div><span class="sh-lbl">DELETE ACCOUNTS</span><div class="sh-line"></div></div>
@@ -1156,7 +1260,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 
 </div><!-- /tab-all -->
 
-<div class="ftr">⚡ NEXUSDEV API · HTTPS via Nginx · <a href="https://t.me/nexusdev">@nexusdev</a></div>
+<div class="ftr">⚡ NEXUSDEV API · HTTPS via Nginx danzi · <a href="https://t.me/nexusdev">@nexusdev</a></div>
 </div>
 
 <script>
@@ -1190,7 +1294,7 @@ function showTab(name,el){
   document.querySelectorAll('.tabs .tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('tab-all').classList.add('active');
-  ['ssh','vmess','vless','trojan','del','ren'].forEach(g=>{
+  ['ssh','vmess','vless','trojan','zivpn','del','ren'].forEach(g=>{
     const e=document.getElementById('grp-'+g);
     if(e) e.style.display=(name==='all'||name===g)?'':'none';
   });
@@ -1201,6 +1305,162 @@ function showTab(name,el){
 }
 
 
+
+// ─── ZIVPN ──────────────────────────────────────────────────────────────────
+
+function getZivpnHost() {
+  // Baca CN dari sertifikat zivpn; fallback ke IP
+  const certOut = execCmd(`openssl x509 -in /etc/zivpn/zivpn.crt -noout -subject 2>/dev/null | sed -n 's/.*CN = \\([^,]*\\).*/\\1/p'`);
+  const cn = certOut.ok ? certOut.out.trim() : '';
+  if (cn && cn !== 'zivpn') return cn;
+  return readFile('/etc/zivpn/ip.txt', getIP());
+}
+
+function handleCreateZivpn(params, res) {
+  const { password, exp } = params;
+  if (!password || !exp)
+    return sendJSON(res, 400, { status: 'error', message: 'Required: password, exp' });
+
+  if (!/^[0-9]+$/.test(String(exp)))
+    return sendJSON(res, 400, { status: 'error', message: 'exp must be a positive integer (days)' });
+
+  const host    = getZivpnHost();
+  const ip      = readFile('/etc/zivpn/ip.txt', getIP());
+  const isp     = readFile('/etc/zivpn/isp.txt', getISP());
+  const domain  = getDomain();
+
+  // Cek password sudah ada
+  const check = execCmd(`grep -q "^${password}:" /etc/zivpn/users.db 2>/dev/null && echo "exists"`);
+  if (check.out.includes('exists'))
+    return sendJSON(res, 409, { status: 'error', message: `Password '${password}' already exists` });
+
+  // Hitung expiry dalam unix timestamp
+  const expSec = execCmd(`date -d "+${exp} days" +%s | tr -d "\\n\\r"`);
+  if (!expSec.ok || !expSec.out.trim())
+    return sendJSON(res, 500, { status: 'error', message: 'Failed to calculate expiry date' });
+
+  const expiryTs = expSec.out.trim();
+  const expFormatted = execCmd(`date -d "@${expiryTs}" +"%d %B %Y %H:%M"`).out.trim();
+
+  execCmd(`echo "${password}:${expiryTs}" >> /etc/zivpn/users.db`);
+  execCmd(`jq --arg pass "${password}" '.auth.config += [$pass]' /etc/zivpn/config.json > /etc/zivpn/config.json.tmp && mv /etc/zivpn/config.json.tmp /etc/zivpn/config.json 2>/dev/null || true`);
+  execCmd(`systemctl restart zivpn.service --no-block 2>/dev/null || true`);
+
+  sendJSON(res, 200, {
+    status: 'success',
+    data: {
+      host,
+      ip,
+      isp,
+      password,
+      expired: `${exp} Days`,
+      expiredDate: expFormatted,
+      created: formatDateShort(new Date()),
+      saveLink: `https://${domain}/api/zivpn-${password}.txt`
+    }
+  });
+}
+
+function handleTrialZivpn(params, res) {
+  const minutes = params.minutes || '60';
+
+  if (!/^[0-9]+$/.test(String(minutes)))
+    return sendJSON(res, 400, { status: 'error', message: 'minutes must be a positive integer' });
+
+  const host    = getZivpnHost();
+  const ip      = readFile('/etc/zivpn/ip.txt', getIP());
+  const isp     = readFile('/etc/zivpn/isp.txt', getISP());
+  const domain  = getDomain();
+
+  const password = `trial${Math.floor(Math.random() * 90000) + 10000}`;
+
+  const expSec = execCmd(`date -d "+${minutes} minutes" +%s | tr -d "\\n\\r"`);
+  if (!expSec.ok || !expSec.out.trim())
+    return sendJSON(res, 500, { status: 'error', message: 'Failed to calculate expiry date' });
+
+  const expiryTs     = expSec.out.trim();
+  const expFormatted = execCmd(`date -d "@${expiryTs}" +"%d %B %Y %H:%M"`).out.trim();
+
+  execCmd(`echo "${password}:${expiryTs}" >> /etc/zivpn/users.db`);
+  execCmd(`jq --arg pass "${password}" '.auth.config += [$pass]' /etc/zivpn/config.json > /etc/zivpn/config.json.tmp && mv /etc/zivpn/config.json.tmp /etc/zivpn/config.json 2>/dev/null || true`);
+  execCmd(`systemctl restart zivpn.service --no-block 2>/dev/null || true`);
+
+  sendJSON(res, 200, {
+    status: 'success',
+    data: {
+      host,
+      ip,
+      isp,
+      password,
+      expired: `${minutes} Minutes`,
+      expiredDate: expFormatted,
+      saveLink: `https://${domain}/api/zivpn-${password}.txt`
+    }
+  });
+}
+
+function handleDeleteZivpn(params, res) {
+  const password = params.password || params.pass || params.username;
+  if (!password)
+    return sendJSON(res, 400, { status: 'error', message: 'Required: password' });
+
+  const check = execCmd(`grep -q "^${password}:" /etc/zivpn/users.db 2>/dev/null && echo "exists"`);
+  if (!check.out.includes('exists'))
+    return sendJSON(res, 404, { status: 'error', message: `ZIVPN account '${password}' not found` });
+
+  execCmd(`jq --arg pass "${password}" 'del(.auth.config[] | select(. == $pass))' /etc/zivpn/config.json > /etc/zivpn/config.json.tmp 2>/dev/null && mv /etc/zivpn/config.json.tmp /etc/zivpn/config.json || true`);
+  execCmd(`sed -i "/^${password}:/d" /etc/zivpn/users.db 2>/dev/null || true`);
+  execCmd(`systemctl restart zivpn.service --no-block 2>/dev/null || true`);
+
+  sendJSON(res, 200, {
+    status: 'success',
+    message: `ZIVPN account '${password}' deleted successfully`
+  });
+}
+
+function handleRenewZivpn(params, res) {
+  const password = params.password || params.pass || params.num;
+  const exp      = params.exp;
+  if (!password || !exp)
+    return sendJSON(res, 400, { status: 'error', message: 'Required: password, exp (days)' });
+
+  const days = parseInt(exp);
+  if (isNaN(days) || days < 1)
+    return sendJSON(res, 400, { status: 'error', message: 'exp must be a positive integer (days)' });
+
+  const userLine = execCmd(`grep "^${password}:" /etc/zivpn/users.db 2>/dev/null`);
+  if (!userLine.ok || !userLine.out.trim())
+    return sendJSON(res, 404, { status: 'error', message: `ZIVPN account '${password}' not found` });
+
+  const parts = userLine.out.trim().split(':');
+  const currentTs = parseInt(parts[1]) || 0;
+
+  const nowTs  = Math.floor(Date.now() / 1000);
+  const baseTs = currentTs > nowTs ? currentTs : nowTs;
+  const newTs  = baseTs + (days * 86400);
+
+  const prevFormatted = execCmd(`date -d "@${currentTs}" +"%d %B %Y %H:%M" 2>/dev/null`).out.trim() || String(currentTs);
+  const newFormatted  = execCmd(`date -d "@${newTs}" +"%d %B %Y %H:%M" 2>/dev/null`).out.trim();
+
+  execCmd(`sed -i "s/^${password}:.*/${password}:${newTs}/" /etc/zivpn/users.db 2>/dev/null || true`);
+
+  const host = getZivpnHost();
+  const ip   = readFile('/etc/zivpn/ip.txt', getIP());
+  const isp  = readFile('/etc/zivpn/isp.txt', getISP());
+
+  sendJSON(res, 200, {
+    status: 'success',
+    data: {
+      host,
+      ip,
+      isp,
+      password,
+      previous_expiry: prevFormatted,
+      days_added: days,
+      expired: newFormatted
+    }
+  });
+}
 
 // ─── Delete SSH ───────────────────────────────────────────────────────────────
 function handleDeleteSSH(params, res) {
@@ -1545,6 +1805,12 @@ const server = http.createServer((req, res) => {
   if (pathname === '/api/renws')   return handleRenewVmess(params, res);
   if (pathname === '/api/renvl')   return handleRenewVless(params, res);
   if (pathname === '/api/rentr')   return handleRenewTrojan(params, res);
+
+  // ZIVPN routes
+  if (pathname === '/api/trial-zivpn')  return handleTrialZivpn(params, res);
+  if (pathname === '/api/create-zivpn') return handleCreateZivpn(params, res);
+  if (pathname === '/api/delzv')        return handleDeleteZivpn(params, res);
+  if (pathname === '/api/renzv')        return handleRenewZivpn(params, res);
 
   sendJSON(res, 404, { status: 'error', message: `Not found: ${pathname} — see /api/doc.html` });
 });
