@@ -1,6 +1,6 @@
 #!/bin/bash
 
-IZIN_URL="https://raw.githubusercontent.com/AutoNV/gh/main/ip"
+IZIN_URL="https://raw.githubusercontent.com/AutoNV/izin/main/ip"
 CACHE_DIR="/tmp/izin_cache"
 CACHE_FILE="$CACHE_DIR/iplist.txt"
 IPSAVE_FILE="/usr/bin/ipsave"
