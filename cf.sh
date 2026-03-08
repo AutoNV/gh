@@ -1,7 +1,7 @@
 set -euo pipefail
-CF_ID="ptrajaserverpremium@gmail.com"
-CF_KEY="8d38e5ab5ee2d6f939c9f75c29fe9171936f6"
-DOMAIN="buyerserverpremium.web.id"
+CF_ID="ayfa7756@gmail.com"
+CF_KEY="89df648f7990d6d807d6c9ed7dd265d9d4300"
+DOMAIN="nexusdev.my.id"
 SUB="test$((RANDOM % 10 + 1))"
 IP=$(cat /usr/bin/ipsave)
 echo "🔎 Memproses subdomain: ${SUB}.${DOMAIN}"
